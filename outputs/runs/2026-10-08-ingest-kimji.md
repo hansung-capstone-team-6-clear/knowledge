@@ -14,8 +14,8 @@ sources:
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
   - "raw/데스크펫 MVP 아키텍처.md"
 notes:
-  - "[[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]"
-  - "[[wiki/desk-pet-hardware-components|부품·핀맵·예산]]"
+  - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
+  - "[[wiki/desk-pet-hardware|Desk Pet Hardware]]"
   - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"

@@ -34,7 +34,7 @@ updated: "2026-10-08"
 | `ALERT` | `proactive_alert` 수신 | orange / fast_blink | alert |
 | `ERROR` | `output`의 `type: error`, Wi-Fi 끊김, 장치 오류 | red / blink | surprised |
 
-- LED 밝기 상한은 30%(`ledBrightnessMax: 0.3`)다. 전원 예산 때문이다([[wiki/desk-pet-hardware-components|부품·핀맵·예산]]).
+- LED 밝기 상한은 30%(`ledBrightnessMax: 0.3`)다. 전원 예산 때문이다([[wiki/desk-pet-hardware|Desk Pet Hardware]]).
 - `ALERT`는 원래 `LISTENING`과 같은 노랑 점멸이라 구분이 안 돼 주황 빠른 점멸로 바꿨다.
 - LCD 표정에는 상태 외에 `happy`도 있다(예: 업무 등록 완료 응답).
 - `THINKING`·`ALERT`·`ERROR` 색은 제안값이며 디자인 담당 확정 전이다.
@@ -61,7 +61,7 @@ updated: "2026-10-08"
 
 - 상태 관리 인터페이스 정의: [[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]] (7) `IDeviceStateManager`, 출력은 (3) `IHardwareOutput`
 - 상태를 바꾸는 이벤트: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]
-- 흐름 안에서의 상태 변화: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
+- 흐름 안에서의 상태 변화: [[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]
 
 ## Open Questions
 

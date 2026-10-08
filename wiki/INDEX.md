@@ -6,7 +6,7 @@ This index is the entry point for vault queries and ingest deduplication.
 
 - [[wiki/topics/knowledge-management|Knowledge Management]]
 - [[wiki/topics/eureka-desk-pet|AI Desk Pet (Capstone)]]
-- [[wiki/topics/hardware|Hardware]]
+  - [[wiki/topics/hardware|Hardware]]
 
 ## Articles
 
@@ -16,14 +16,14 @@ This index is the entry point for vault queries and ingest deduplication.
 - [[wiki/proactive-deadline-alert|Proactive Deadline Alert]] — 대표 시나리오: Polling 기반 마감 임박 선제 알림
 - [[wiki/intent-routing-and-structured-output|Intent Routing & Structured Output]] — 경량 Intent → LLM 2단계 라우팅, JSON 출력, LLM 금지 사항
 - [[wiki/eureka-process-api|Eureka Process API]] — 업무 기준 저장소 API, PoC 지연 시간, 제약 4가지
-- [[wiki/desk-pet-hardware|Desk Pet Hardware]] — Raspberry Pi 4B 핀맵, 부품·예산, 온디바이스 vs 클라우드
+- [[wiki/desk-pet-hardware|Desk Pet Hardware]] — Raspberry Pi 4B 핀맵, 부품·예산(10/07 MVP 기준), 온디바이스 vs 클라우드
 - [[wiki/desk-pet-interface-contracts|Desk Pet Interface Contracts]] — 계층 간 JSON 인터페이스 색인, WebSocket 이벤트
 - [[wiki/desk-pet-requirements-and-policies|Desk Pet Requirements & Policies]] — FR/NFR, 응답 시간 예산, 처리 정책, 구현 범위
 
-### Hardware
+### AI Desk Pet › Hardware
 
-- [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]] — 4계층 구조, 음성(HTTP)·알림(WebSocket) 두 흐름, 설계 결정
-- [[wiki/desk-pet-hardware-components|부품·핀맵·예산]] — Pi 4B 핀맵, 부팅 설정, BOM과 예산
+아키텍처·부품·핀맵은 위 [[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]와 [[wiki/desk-pet-hardware|Desk Pet Hardware]]에 통합돼 있다.
+
 - [[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]] — Pi 쪽 7개 인터페이스 요약
 - [[wiki/desk-pet-device-states|장치 상태]] — 6개 상태, LED/LCD 표시, 전이 규칙
 - [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]] — WebSocket 이벤트, `POST /api/voice`

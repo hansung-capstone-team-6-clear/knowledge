@@ -10,7 +10,7 @@ sources:
 related:
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
-  - "[[wiki/desk-pet-hardware-components|부품·핀맵·예산]]"
+  - "[[wiki/desk-pet-hardware|Desk Pet Hardware]]"
   - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
 updated: "2026-10-08"
@@ -46,9 +46,9 @@ Pi 쪽 Python 소프트웨어는 7개 인터페이스로 나뉜다. 입력 2개(
 
 ## Connections
 
-- 계층 다이어그램 속 배치: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
+- 계층 다이어그램 속 배치: [[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]
 - (4)·(5)가 주고받는 메시지: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]
-- (1)·(2)·(3)이 구동하는 부품과 핀: [[wiki/desk-pet-hardware-components|부품·핀맵·예산]]
+- (1)·(2)·(3)이 구동하는 부품과 핀: [[wiki/desk-pet-hardware|Desk Pet Hardware]]
 - AI 처리 구조 문서와 충돌해 (3)·(5)를 고쳐야 할 수 있는 항목: [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions
