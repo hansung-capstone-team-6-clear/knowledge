@@ -7,7 +7,7 @@ sources:
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
   - "raw/deskpet_AI_HW_충돌검토.md"
 related:
-  - "[[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]"
+  - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
   - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
@@ -57,10 +57,10 @@ Backend 합의 2건이 가장 급하고, 나머지는 부품 도착 후 실물�
 
 ## Connections
 
-- 결정이 반영된 결과 구조: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
+- 결정이 반영된 결과 구조: [[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]
 - 항목 1·2·4·5·7·8의 결과 규약: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]
 - 항목 6·9의 결과 상태표: [[wiki/desk-pet-device-states|장치 상태]]
-- 항목 10·14·15의 결과 부품표: [[wiki/desk-pet-hardware-components|부품·핀맵·예산]]
+- 항목 10·14·15의 결과 부품표: [[wiki/desk-pet-hardware|Desk Pet Hardware]]
 - 이 결정들을 AI 처리 구조 문서와 대조한 결과(13건 중 10건 조치 필요): [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions

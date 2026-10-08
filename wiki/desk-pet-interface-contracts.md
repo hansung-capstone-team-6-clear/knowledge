@@ -14,6 +14,8 @@ related:
   - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
   - "[[wiki/eureka-process-api|Eureka Process API]]"
   - "[[wiki/intent-routing-and-structured-output|Intent Routing & Structured Output]]"
+  - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
+  - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -53,6 +55,11 @@ updated: "2026-10-08"
 | Second Brain | `SaveWorkRecord` / `UpdateWorkContext` / `SearchContext` / `SaveReminderSetting` | MCP Tool 또는 Backend 내부 서비스 | 3초 |
 | Output | `GenerateOutput` | 결과 → `ttsText`, `ledState`, `lcdExpressionId`, `lcdText` | 목표 0.2초, 최대 0.5초 |
 | Output | `SendOutputCommand` | Backend → Pi, 실패 시 능동 알림은 미전달 기록 | 무응답 시 네트워크 오류 |
+
+> Hardware 행은 9/30 원안 기준이다. 2026-10-07 하드웨어 정리안은 `IAudioCapture`를 WAV 16kHz·mono·16bit로 고정하고, `IVoiceUpload` 응답에
+> 최종 `output`을 포함·대기 10초로 늘렸으며, `IDeviceStatusMonitor`는 Backend 보고 없이 Pi 내부에서 처리하고, `IBackendConnection`에서 `ack`를 뺐고,
+> `IDeviceStateManager`를 추가했다 — [[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]. AI 쪽 `SUCCESS`는 `OK`로 맞추자는 제안이 있다
+> ([[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 5번).
 
 공통 오류 원칙: 외부 처리 실패를 성공으로 안내하지 않고, 대상이 모호하면 변경하지 않고 확인을 요청하며, 조회 실패 시
 값을 추정하지 않는다.
@@ -107,8 +114,8 @@ Hardware ↔ Backend, Backend ↔ AI, Backend ↔ Eureka Process, Backend ↔ Sc
 
 ## Open Questions
 
-- `proactive_alert` 스키마가 세 가지(Mock 형식 vs 9/30 `PROACTIVE_ALERT` 형식 vs 개정 다이어그램의 `request_id`·무`led` 형식)로 공존한다 — 하나로 확정 필요 (needs-update).
+- `proactive_alert` 스키마가 세 가지(Mock 형식 vs 9/30 `PROACTIVE_ALERT` 형식 vs 개정 다이어그램의 `request_id`·무`led` 형식)로 공존한다 — 10/07 하드웨어 정리안은 세 번째(Mock + `request_id`, `led`는 보내도 무시)를 택했다 — [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]. Backend 합의 대기 (needs-update).
 - `proactive_alert` 전달 실패 시 "재처리 정책"이 개정 계약에 이름만 있고 내용이 없다.
 - 필드 표기 혼용: Backend API는 camelCase(`taskName`, `dueAt`), AI 출력은 snake_case(`task_name`, `due_at`).
-- `ledState` 열거값에 알림 전용 상태가 없다(`IDLE / LISTENING / SPEAKING / ERROR`).
+- `ledState` 알림 전용 상태 부재 → 10/07 정리안에서 6종(`THINKING`·`ALERT` 추가)으로 확장됐다 — [[wiki/desk-pet-device-states|장치 상태]].
 - WebSocket URL이 `ws://`로 적혀 있으나 NFR-11은 HTTPS(암호화) 통신을 기본으로 한다 → `wss://` 여부 확인.

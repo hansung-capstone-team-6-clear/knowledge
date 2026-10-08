@@ -8,7 +8,7 @@ sources:
   - "raw/데스크펫 MVP 아키텍처.md"
   - "raw/deskpet_AI_HW_충돌검토.md"
 related:
-  - "[[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]"
+  - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
   - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
@@ -89,7 +89,7 @@ Pi와 Backend는 두 통로만 쓴다. Backend → Pi 알림·출력은 WebSocke
 
 ## Connections
 
-- 전체 흐름 속 위치: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
+- 전체 흐름 속 위치: [[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]
 - 이 메시지를 다루는 Pi 인터페이스: [[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]] (4) `IBackendConnection`, (5) `IVoiceUpload`
 - 이전 설계(WebSocket PCM 스트리밍, Backend `state` 이벤트)에서 바뀐 이유: [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]]
 - AI 처리 구조 문서와의 형식 충돌(상태값 `SUCCESS`/`OK`, 시간대, 재질문 연결): [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]

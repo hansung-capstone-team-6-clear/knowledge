@@ -2,6 +2,7 @@
 type: concept
 topics:
   - "[[wiki/topics/eureka-desk-pet|AI Desk Pet (Capstone)]]"
+  - "[[wiki/topics/hardware|Hardware]]"
 status: draft
 sources:
   - "raw/Capstone Eureka Process - 02 시스템 설계.md"
@@ -9,10 +10,14 @@ sources:
   - "raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md"
   - "raw/Capstone Eureka Process - 10-01 기업 미팅 기록.md"
   - "raw/desk-pet-backend-architecture.md"
+  - "raw/데스크펫 MVP 아키텍처.md"
+  - "raw/데스크펫 하드웨어 정리안 (MVP).md"
 related:
   - "[[wiki/desk-pet-interface-contracts|Desk Pet Interface Contracts]]"
   - "[[wiki/proactive-deadline-alert|Proactive Deadline Alert]]"
   - "[[wiki/intent-routing-and-structured-output|Intent Routing & Structured Output]]"
+  - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
+  - "[[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -80,12 +85,41 @@ Eureka 연동에서도 그대로 쓸 수 있다는 것이 이 구조의 핵심 �
   Pi에 돌려주고, 서버가 먼저 보내는 출력(`output`·`proactive_alert`)만 `OutputPublisherPort` → `WebSocketAdapter`를 쓴다.
 - **TTS 합성 위치**: OutputService는 TTS 문장·LCD 표정/텍스트만 만들고, 음성 합성(Edge-TTS)과 LED·LCD 제어는 Pi가 맡는다.
 
+### 하드웨어 MVP 아키텍처 (2026-10-07 정리안 · 「데스크펫 MVP 아키텍처」)
+
+하드웨어 쪽 MVP 정리안은 위 개정 다이어그램과 같은 방향으로 Pi–Backend 경계를 확정했다. **통로는 두 개뿐**이다.
+
+| 계층 | 구성 |
+| --- | --- |
+| 1 · 하드웨어 | 마이크 ICS-43434, PTT 버튼(GPIO17), 앰프 MAX98357A + 3W 스피커, LED 링 24구(GPIO12), LCD ST7789(SPI0). 서보 제외 |
+| 2 · Pi 소프트웨어 (Python) | `IAudioCapture`, `IButtonInput`, `IDeviceStateManager`(중심), `IHardwareOutput`, `IVoiceUpload`, `IBackendConnection`, `IDeviceStatusMonitor` |
+| 3 · Backend | `POST /api/voice`, STT(Faster-Whisper), Intent · Local LLM, WebSocket `/ws/hardware/{user_id}`, Scheduler, Eureka API Adapter, DB(알림 이력·미전달 알림) |
+| 4 · 외부 | Eureka Process |
+
+- **음성 요청 (HTTP)**: 버튼 누름 → `LISTENING`·녹음(최대 15초) → 버튼 뗌 → Pi가 스스로 `THINKING` → WAV를 `POST /api/voice`로
+  업로드(5초 발화 약 160KB, 0.1~0.3초) → Backend가 STT·Intent·LLM·Eureka 처리 후 최종 `output`을 응답 본문으로 반환 →
+  `SPEAKING`·Edge-TTS 재생 → `IDLE`. 10초 안에 응답이 없으면 `ERROR`.
+- **마감 알림 (WebSocket)**: Scheduler가 Eureka를 Polling → 마감 임박(기본 1시간 전)·미완료 업무 → `proactive_alert` push →
+  `ALERT`·LCD·TTS → `IDLE`. 연결이 끊겨 있었으면 재연결 시 Backend가 재전송. Pi는 30초마다 PING.
+
+| 설계 결정 | 이유 |
+| --- | --- |
+| 음성은 녹음 후 파일 업로드 | Faster-Whisper는 음성을 다 받은 뒤 인식하므로 스트리밍으로 줄일 수 있는 건 업로드 0.1~0.3초뿐 |
+| TTS는 문장만 받고 Pi가 합성 | Mock Server가 이미 문장을 보내고, 오디오 송수신 코드가 필요 없음 |
+| LED 색은 Pi가 결정 | 색 정의가 한 곳에 모여 LISTENING/ALERT 노랑 중복 같은 충돌이 없어짐 |
+| WebSocket 이벤트는 Mock 이름 유지 | `connected`·`proactive_alert`·`output`·`PONG` 그대로 써서 기존 테스트 코드 재사용 |
+| 서보는 MVP 제외 | LED와 PWM 공유, 앰프와 5V 핀 공유 문제가 함께 사라짐 |
+
+스트리밍 전환 기준: 전체 흐름 완성 후 업로드·STT·LLM·TTS 구간별 시간을 실측하고, 업로드가 병목일 때만 `IVoiceUpload`를
+WebSocket 스트리밍으로 바꾼다. 체감 속도 개선에는 TTS를 문장 단위로 나눠 첫 문장부터 재생하는 편이 더 효과적이다.
+메시지 형식은 [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]], 결정 배경은 [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]].
+
 ### 처리 위치 원칙
 
 - **Pi / 로컬**: PTT 상태, 녹음, LED·LCD·스피커 제어, 장치·네트워크 상태 확인, 오프라인 시계, (가능하면) 경량 Intent.
 - **Backend / Cloud**: 복합 요청 해석, LLM·MCP 호출, Eureka 연동, Second Brain 검색·저장, 마감 Scheduler, 알림·Context 관리.
-- 하드웨어 조사 결과 Pi 4B에서 STT·LLM을 모두 돌리면 CPU 100%·발열·LCD 프레임 드롭이 생겨,
-  **VAD만 로컬, STT·LLM·TTS는 서버/API**가 권장안이다([[desk-pet-hardware|Desk Pet Hardware]]).
+- 초기 하드웨어 조사에서는 Pi 4B에서 STT·LLM을 모두 돌리면 CPU 100%·발열·LCD 프레임 드롭이 생겨,
+  **VAD만 로컬, STT·LLM·TTS는 서버/API**를 권장했다. 10/07 MVP 확정안은 VAD 없음(PTT), TTS는 Pi의 Edge-TTS다([[desk-pet-hardware|Desk Pet Hardware]]).
 
 ### 멘토 권장 사항 (10/01)
 
@@ -102,12 +136,14 @@ Eureka 연동에서도 그대로 쓸 수 있다는 것이 이 구조의 핵심 �
 - AI 계층 → [[intent-routing-and-structured-output|Intent Routing & Structured Output]]
 - 외부 업무 시스템 → [[eureka-process-api|Eureka Process API]]
 - 요구사항·정책 → [[desk-pet-requirements-and-policies|Desk Pet Requirements & Policies]]
+- AI 처리 구조 문서와 하드웨어 정리안의 충돌 13건 → [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions
 
 - 배포 형태 미정: AWS Lambda에서 상시 WebSocket·Polling Scheduler를 어떻게 유지할지 (needs-update).
 - Pi↔Backend 음성 전송 방식이 문서마다 다르다 — HTTPS `POST /api/voice` 업로드(IVoiceUpload) vs WebSocket PCM 스트림(9/30 안).
-  개정 다이어그램(2026-10-08)은 HTTP 업로드 + 서버 STT로 그렸다 — 팀 확정 여부 확인 필요.
+  개정 다이어그램(2026-10-08)과 하드웨어 MVP 정리안(10-07) 모두 HTTP 업로드 + 서버 STT다. 남은 건 Backend 담당 합의다 (needs-update).
 - 알림 이력·중복 방지 상태 저장소: 개정 다이어그램에서 `DatabaseAdapter`가 빠져 미확정 상태다 (needs-update).
-- TTS 위치가 문서마다 다르다 — 하드웨어 권장안은 서버/API TTS, 개정 다이어그램은 Pi의 Edge-TTS.
+- TTS 위치: 초기 하드웨어 권장안은 서버/API TTS였으나 개정 다이어그램과 10/07 MVP 정리안은 Pi의 Edge-TTS다. Backend 합의와 Pi 합성 시간 실측이 남았다 (needs-update).
+- 처리 시간: AI 쪽 최악 약 16초(STT 5 + Intent 1 + LLM 5 + MCP 5) vs Pi 대기 10초 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 1번.
 - Second Brain 구현체 미정 — 백엔드 DB, Notion API, 팀 knowledge vault 중 무엇을 쓸지.
