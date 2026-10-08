@@ -2,7 +2,7 @@
 # 재생성: vault 루트에서 python3 projects/second-brain/config/scripts/generate_raw_index.py
 # 계약: docs/raw-layout.md § 색인. 사람용 요약: docs/raw-index.md
 generated: "2026-10-08"
-root_files: 3
+root_files: 16
 root_cap: 200
 screenshots: 0
 conversion_originals:
@@ -12,40 +12,137 @@ conversion_originals:
   xlsx: 1
 orphan_originals: []
 by_month:
-  "unknown": 1
-  "2026-10": 2
+  "unknown": 13
+  "2026-10": 3
 orphans: []
 duplicate_sources: []
 entries:
-  - file: "raw/deskpet_AI_HW_충돌검토.md"
+  - file: "raw/desk-pet-backend-architecture.md"
     added: "unknown"
-    source: ""
+    source: "archify 3.0.1 HTML export — backend_architecture.html"
     refs:
-      - "outputs\\runs\\2026-10-08-ingest-kimji-2.md"
-      - "wiki\\desk-pet-ai-hw-conflict-review.md"
-      - "wiki\\desk-pet-device-states.md"
-      - "wiki\\desk-pet-hardware-interfaces.md"
-      - "wiki\\desk-pet-hardware-mvp-decisions.md"
-      - "wiki\\desk-pet-mvp-architecture.md"
-      - "wiki\\desk-pet-pi-backend-protocol.md"
+      - "outputs/runs/2026-10-08-ingest-sensior101.md"
+      - "wiki/desk-pet-interface-contracts.md"
+      - "wiki/desk-pet-system-architecture.md"
+      - "wiki/proactive-deadline-alert.md"
+  - file: "raw/LLM Wiki - AI 데스크 펫 프로젝트.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리/LLM Wiki — AI 데스크 펫 프로젝트"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "projects/eureka-desk-pet/README.md"
+      - "wiki/intent-routing-and-structured-output.md"
+  - file: "raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "projects/eureka-desk-pet/README.md"
+      - "wiki/desk-pet-hardware.md"
+      - "wiki/desk-pet-interface-contracts.md"
+      - "wiki/desk-pet-requirements-and-policies.md"
+      - "wiki/desk-pet-system-architecture.md"
+      - "wiki/eureka-process-api.md"
+      - "wiki/intent-routing-and-structured-output.md"
+      - "wiki/proactive-deadline-alert.md"
+  - file: "raw/Capstone Eureka Process.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+  - file: "raw/Capstone Eureka Process - 작업 트래커.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/작업 트래커 (database + 하위 페이지)"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+  - file: "raw/Capstone Eureka Process - 10-01 기업 미팅 기록.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/10 01 기업 미팅 기록"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-interface-contracts.md"
+      - "wiki/desk-pet-requirements-and-policies.md"
+      - "wiki/desk-pet-system-architecture.md"
+      - "wiki/intent-routing-and-structured-output.md"
+  - file: "raw/Capstone Eureka Process - 09-16 회의기록.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/9 16 회의기록"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-hardware.md"
+      - "wiki/eureka-process-api.md"
+  - file: "raw/Capstone Eureka Process - 05 Raspberry Pi.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/⚡05 Raspberry Pi"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-hardware.md"
+      - "wiki/desk-pet-interface-contracts.md"
+  - file: "raw/Capstone Eureka Process - 04 Backend.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/💻 04 Backend"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-interface-contracts.md"
+      - "wiki/eureka-process-api.md"
+      - "wiki/proactive-deadline-alert.md"
+  - file: "raw/Capstone Eureka Process - 03 AI & 데이터.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/🤖 03 AI & 데이터"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-interface-contracts.md"
+      - "wiki/intent-routing-and-structured-output.md"
+  - file: "raw/Capstone Eureka Process - 02 시스템 설계.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/🏗️ 02 시스템 설계"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-system-architecture.md"
+      - "wiki/proactive-deadline-alert.md"
+  - file: "raw/Capstone Eureka Process - 02 desk-pet-architecture 다이어그램.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/🏗️ 02 시스템 설계/desk-pet-architecture.html"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "outputs/runs/2026-10-08-ingest-sensior101.md"
+      - "wiki/desk-pet-system-architecture.md"
+  - file: "raw/Capstone Eureka Process - 01 기획.md"
+    added: "unknown"
+    source: "Notion export (팀 워크스페이스) — Capstone Eureka Process/📂 01 기획"
+    refs:
+      - "outputs/runs/2026-10-08-ingest-riyunkim.md"
+      - "wiki/desk-pet-requirements-and-policies.md"
+      - "wiki/proactive-deadline-alert.md"
   - file: "raw/데스크펫 하드웨어 정리안 (MVP).md"
     added: "2026-10-08"
     source: ""
     refs:
-      - "outputs\\runs\\2026-10-08-ingest-kimji.md"
-      - "wiki\\desk-pet-ai-hw-conflict-review.md"
-      - "wiki\\desk-pet-device-states.md"
-      - "wiki\\desk-pet-hardware-components.md"
-      - "wiki\\desk-pet-hardware-interfaces.md"
-      - "wiki\\desk-pet-hardware-mvp-decisions.md"
-      - "wiki\\desk-pet-mvp-architecture.md"
-      - "wiki\\desk-pet-pi-backend-protocol.md"
+      - "outputs/runs/2026-10-08-ingest-kimji.md"
+      - "wiki/desk-pet-ai-hw-conflict-review.md"
+      - "wiki/desk-pet-device-states.md"
+      - "wiki/desk-pet-hardware-components.md"
+      - "wiki/desk-pet-hardware-interfaces.md"
+      - "wiki/desk-pet-hardware-mvp-decisions.md"
+      - "wiki/desk-pet-mvp-architecture.md"
+      - "wiki/desk-pet-pi-backend-protocol.md"
   - file: "raw/데스크펫 MVP 아키텍처.md"
     added: "2026-10-08"
     source: "팀 내부 문서 — 데스크펫 MVP 아키텍처.html (로컬 HTML 페이지, URL 없음)"
     refs:
-      - "outputs\\runs\\2026-10-08-ingest-kimji.md"
-      - "wiki\\desk-pet-device-states.md"
-      - "wiki\\desk-pet-hardware-interfaces.md"
-      - "wiki\\desk-pet-mvp-architecture.md"
-      - "wiki\\desk-pet-pi-backend-protocol.md"
+      - "outputs/runs/2026-10-08-ingest-kimji.md"
+      - "wiki/desk-pet-device-states.md"
+      - "wiki/desk-pet-hardware-interfaces.md"
+      - "wiki/desk-pet-mvp-architecture.md"
+      - "wiki/desk-pet-pi-backend-protocol.md"
+  - file: "raw/deskpet_AI_HW_충돌검토.md"
+    added: "2026-10-08"
+    source: ""
+    refs:
+      - "outputs/runs/2026-10-08-ingest-kimji-2.md"
+      - "wiki/desk-pet-ai-hw-conflict-review.md"
+      - "wiki/desk-pet-device-states.md"
+      - "wiki/desk-pet-hardware-interfaces.md"
+      - "wiki/desk-pet-hardware-mvp-decisions.md"
+      - "wiki/desk-pet-mvp-architecture.md"
+      - "wiki/desk-pet-pi-backend-protocol.md"
