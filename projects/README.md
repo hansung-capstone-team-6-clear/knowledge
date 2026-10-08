@@ -9,6 +9,7 @@
 | 프로젝트 | 상태 | 목적 |
 |---------|------|------|
 | [second-brain](second-brain/) | active | 이 vault의 구조·워크플로우 지속 개선 (3-루프 가동) |
+| [desk-pet](desk-pet/) | active | Eureka Process 연동 업무관리 AI 데스크펫 — 최소 비용 1차 구현 후 고도화 |
 | [@lemoncloud-io](@lemoncloud-io/) | 1 repos | GitHub 연결 프로젝트 |
 
 > 상태·마감·다음 행동의 진실원은 각 프로젝트 README의 frontmatter다. 루트 `projects.base` 대시보드에서 집계된다. 완료(`done`) 프로젝트는 `archive/projects/`로 이동한다.
