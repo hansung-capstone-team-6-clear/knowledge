@@ -56,7 +56,7 @@ Hardware/
 └── app/        ③ 통합 프로그램
     ├── main.py            흐름: 버튼·알림 이벤트 → 상태 → 녹음·업로드·재생
     ├── states.py          상태 6개별 LED 색·LCD 표정 (contracts § 5)
-    ├── backend_client.py  POST /voice, WS 수신 (30초 ping, 5초 재연결)
+    ├── backend_client.py  POST /api/voice, WS /ws/hardware/{user_id} 수신 (30초 PING, 3초 재연결)
     ├── tts.py             edge-tts(`ko-KR-SunHiNeural`) 합성·재생
     ├── devices/           button · audio · led · lcd
     └── assets/faces/      표정 PNG (240×280)

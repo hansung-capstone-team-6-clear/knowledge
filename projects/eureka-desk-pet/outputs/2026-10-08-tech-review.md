@@ -21,7 +21,7 @@ sources:
 **구현은 가능하다. 다만 기존 설계는 4인 3개월 규모에 비해 AI 레이어와 백엔드 구조가 과하다.**
 진짜 리스크는 하드웨어나 Eureka 연동이 아니라, 아직 프로토타입이 없는 "음성 → 대상 업무(itemId) 특정 → 실행" 경로다.
 기획서 1-2의 차별점은 "선제 알림 + 물리적 존재감"인데, 설계 복잡도는 차별점과 관계없는 AI 라우팅
-(경량 Intent → LLM → MCP)에 몰려 있다. 단순화한 1차 구조는 [[projects/desk-pet/architecture|1차 아키텍처]]에 있다.
+(경량 Intent → LLM → MCP)에 몰려 있다. 단순화한 1차 구조는 [[projects/eureka-desk-pet/architecture|1차 아키텍처]]에 있다.
 
 ### 검증된 것과 안 된 것
 
@@ -90,7 +90,7 @@ backend 레포의 `mocks/mock_server`는 다른 버전(v0.1, 상태값 `complete
 5. LED 24개 최대 밝기 약 1.4A + 서보를 Pi 5V에서 같이 공급 → 밝기 30% 이하로 제한.
 6. 디자인 약 85mm 큐브 vs Pi 4B 85.6mm, 24구 링 외경 약 66mm → 실측 필요.
 
-상세: `projects/desk-pet/hardware/README.md`.
+상세: `projects/eureka-desk-pet/hardware/README.md`.
 
 ### 로컬 LLM 비교
 
@@ -106,7 +106,7 @@ backend 레포의 `mocks/mock_server`는 다른 버전(v0.1, 상태값 `complete
 | 오프라인 이점 | Eureka 호출에 네트워크가 필요해 사실상 없음 | 없음 | 없음 |
 
 결론: Pi 직접 실행은 5초 목표를 맞출 수 없고, GPU 셀프호스팅은 캡스톤 사용량에서 API보다 10~100배 비싸다.
-로컬 LLM은 2차 비교 실험으로 둔다 (`projects/desk-pet/ai/README.md`). Pi 4 직접 측정한 공개 벤치마크는 찾지 못했다.
+로컬 LLM은 2차 비교 실험으로 둔다 (`projects/eureka-desk-pet/ai/README.md`). Pi 4 직접 측정한 공개 벤치마크는 찾지 못했다.
 
 ## Notes
 
@@ -118,6 +118,6 @@ backend 레포의 `mocks/mock_server`는 다른 버전(v0.1, 상태값 `complete
 
 ## Follow-ups
 
-- [[projects/desk-pet/architecture|1차 아키텍처]]와 `projects/desk-pet/contracts.md`를 팀 회의에서 확정
+- [[projects/eureka-desk-pet/architecture|1차 아키텍처]]와 `projects/eureka-desk-pet/contracts.md`를 팀 회의에서 확정
 - Eureka API 키 재발급
 - 10/18까지 평가셋 20개로 "음성 → itemId 특정 → 실행" 경로 검증

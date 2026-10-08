@@ -3,7 +3,7 @@ type: query-output
 created: "2026-10-08"
 question: "데스크펫 1차 구현(MVP)을 최소 비용으로 하려면 구성요소별로 무엇을 쓰고, 월 운영비는 얼마인가?"
 sources:
-  - "[[projects/desk-pet/architecture|desk-pet 1차 아키텍처]] — 비용을 산정한 구조"
+  - "[[projects/eureka-desk-pet/architecture|desk-pet 1차 아키텍처]] — 비용을 산정한 구조"
   - "Notion export: Capstone Eureka Process / 05 Raspberry Pi § 하드웨어 예산 (2026-10-08 내보내기)"
   - "https://ai.google.dev/gemini-api/docs/pricing"
   - "https://cloud.google.com/text-to-speech/pricing"

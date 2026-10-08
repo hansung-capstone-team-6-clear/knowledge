@@ -5,6 +5,8 @@ Root topic map for `wiki/topics/`.
 ## Root Topics
 
 - [[wiki/topics/knowledge-management|Knowledge Management]]
+- [[wiki/topics/eureka-desk-pet|AI Desk Pet (Capstone)]]
+  - [[wiki/topics/hardware|Hardware]]
 
 ## Maintenance
 

@@ -4,6 +4,6 @@
 `docs/raw-index.yml`에 있다. 재생성: vault 루트에서 `python3 projects/second-brain/config/scripts/generate_raw_index.py`
 (`vault-lint` 패스가 실행). 계약: `docs/raw-layout.md` § 색인.
 
-- 생성: 2026-09-16 · 루트 파일 0 (서브폴더 재구조화 임계 200) · screenshots 레인 0개 항목
+- 생성: 2026-10-08 · 루트 파일 16 (서브폴더 재구조화 임계 200) · screenshots 레인 0개 항목 · 변환 원본 pdf 1·hwp 0·doc 0·xlsx 1
 - 오펀(참조 0건): 0 · source URL 중복: 0
-- 월별 유입: 
+- 월별 유입: 2026-10 16

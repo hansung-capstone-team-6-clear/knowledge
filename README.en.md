@@ -274,7 +274,7 @@ The skill documents in `projects/second-brain/config/skills/` are the source of 
 ## Projects
 
 - [second-brain](projects/second-brain/) — `active` · continuously improving this vault's structure and workflow
-- [desk-pet](projects/desk-pet/) — `active` · AI desk pet for Eureka Process task management (capstone team 6). Folder layout and doc rules: [projects/desk-pet/README.md](projects/desk-pet/README.md)
+- [eureka-desk-pet](projects/eureka-desk-pet/) — `active` · AI desk pet for Eureka Process task management (capstone team 6). Folder layout and doc rules: [projects/eureka-desk-pet/README.md](projects/eureka-desk-pet/README.md)
 
 The source of truth for a project's status, due date, and next action is the frontmatter of its own README. See [projects/README.md](projects/README.md) for details.
 

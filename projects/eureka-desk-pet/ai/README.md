@@ -7,8 +7,9 @@
 ## 1차 구성
 
 1. 요청 하나에 LLM을 **1회**만 호출한다: 오디오(또는 텍스트) + 맥락 → `{transcript, action, args, question}`.
-2. 1차 기본 모델은 **Gemini Flash-Lite 무료 등급**이다. 오디오를 직접 입력받으므로 STT 단계를 따로 두지 않고, 월 0원이다
-   ([[projects/desk-pet/outputs/2026-10-08-mvp-cost-research|최소 비용 조사]]).
+2. **멘토 제안**: 1차 모델은 **Gemini Flash-Lite 무료 등급**. 오디오를 직접 입력받으므로 STT 단계를 따로 두지 않고, 월 0원이다.
+   팀 결정([[wiki/desk-pet-hardware-mvp-decisions|MVP 결정]] 16번)은 서버 Local LLM이라 **결정 필요** (`../contracts.md` § 3). 근거
+   ([[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|최소 비용 조사]]).
 3. 호출은 함수 하나 `analyze(audio_or_text, context) -> Decision` 뒤에 둔다. 모델 교체는 설정값만 바꾼다.
 4. 사용자에게 들려줄 문장은 `tasks.py` 템플릿이 만든다. 응답 문장을 위해 LLM을 두 번 부르지 않는다.
 5. 경량 Intent 모델, MCP, 로컬 LLM은 1차에 없다 (이유: `../architecture.md` § 1차에서 뺀 것).
@@ -21,14 +22,14 @@ Gemini 무료 등급의 입력은 Google 제품 개선에 쓰일 수 있다 (공
 ## 프롬프트에 넣는 것
 
 1. 현재 시각 (+09:00)과 요일 — "내일", "다음 주 화요일"을 계산하는 기준
-2. 미완료 업무 최대 30개 (`itemId`, `name`, `dueAt`, `status`) — "보고서 검토 완료했어"의 대상을 찾는 근거
+2. 미완료 업무 최대 30개 (`item_id`, `name`, `due_at`, `status`) — "보고서 검토 완료했어"의 대상을 찾는 근거
 3. `pending` — 재질문 중이면 원래 요청
-4. 규칙: 대상이나 날짜가 모호하면 `clarify`, 날짜를 지어내지 않음, 알림 시점을 말하지 않았으면 `offsetMinutes: null`
+4. 규칙: 대상이나 날짜가 모호하면 `clarify`, 날짜를 지어내지 않음, 알림 시점을 말하지 않았으면 `offset_minutes: null`
    (기본값 60은 Backend 정책이 넣는다)
 
 ## 평가셋 (10/18 완료 기준)
 
-발화 20개. 먼저 `/text`로 평가하고, 같은 문장을 녹음해 `/voice`로 다시 평가한다.
+발화 20개. 먼저 `/api/text`로 평가하고, 같은 문장을 녹음해 `/api/voice`로 다시 평가한다.
 
 | 분류 | 개수 | 예 |
 | --- | --- | --- |
@@ -39,7 +40,7 @@ Gemini 무료 등급의 입력은 Google 제품 개선에 쓰일 수 있다 (공
 | 알림 설정·변경 | 3 | "두 시간 전 말고 30분 전에 알려줘" |
 | 모호 → 재질문 | 3 | "보고서 알림 설정해줘" (이름에 "보고서"가 들어간 업무가 2개일 때) |
 
-- 측정: `action` 정확도, `itemId` 정확도, `dueAt` 정확도(분 단위), 재질문 판단, 지연(중앙값·최대)
+- 측정: `action` 정확도, `item_id` 정확도, `due_at` 정확도(분 단위), 재질문 판단, 지연(중앙값·최대)
 - 통과 기준: 20개 중 18개 이상 정답, 지연 중앙값 2초 이하
 - 보관: 발화셋은 `desk-pet-backend` 레포 `tests/eval/utterances.jsonl` (제안), 결과는 이 폴더에 `eval-YYYY-MM-DD.md`
 
@@ -61,4 +62,4 @@ Gemini 무료 등급의 입력은 Google 제품 개선에 쓰일 수 있다 (공
 | 비용 | 0원 | 팀원 GPU PC 0원 / EC2 g4dn.xlarge 서울 $0.647/시간 | 월 수 달러 |
 | 비고 | Notion 05 표의 "Llama 3 8B"는 4bit로도 4GB를 넘어(추정) 4GB Pi에서 실행 불가 | EC2는 실험 시간에만 켠다 | 1차 기본 경로 |
 
-측정 근거와 출처: [[projects/desk-pet/outputs/2026-10-08-tech-review|기술 검토]] § 로컬 LLM 비교.
+측정 근거와 출처: [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]] § 로컬 LLM 비교.

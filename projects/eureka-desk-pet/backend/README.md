@@ -13,7 +13,7 @@ src/desk_pet_backend/
 ├── main.py      앱 진입점, /health
 ├── config.py    환경 변수
 ├── schemas.py   contracts.md를 코드로 옮긴 Pydantic 모델
-├── api/         ① 입구: /voice, /text, /ws (Controller 역할)
+├── api/         ① 입구: /api/voice, /api/text, /ws/hardware/{user_id} (Controller 역할)
 ├── services/    ② 규칙·흐름: tasks.py, ai.py, reminder.py
 ├── eureka.py    ③ 바깥 연결: EurekaClient(real) + EurekaMock(mock)
 └── db.py        ③ 바깥 연결: SQLite (reminders · alerts · pending)
@@ -32,7 +32,7 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 ## 구현 체크리스트 — Mock에서 실제 Eureka로
 
 1. 알림 대상은 `status != done`. Mock v2는 `doing`만 대상이라 실제 Eureka에서 `todo`인 업무의 알림이 빠진다. `hold` 제외 여부는 팀이 정한다.
-2. 중복 방지 키는 (itemId, dueAt, offsetMinutes) — SQLite `alerts` PRIMARY KEY. 키에 dueAt이 없으면 마감 연기 후 알림이 다시 오지 않는다.
+2. 중복 방지 키는 (item_id, due_at, offset_minutes) — SQLite `alerts` PRIMARY KEY. 키에 due_at이 없으면 마감 연기 후 알림이 다시 오지 않는다.
 3. 재연결 시 미전달 알림은 저장해 둔 문장을 그대로 보내지 말고, 상태를 다시 확인하고 남은 시간을 다시 계산해서 보낸다.
 4. 상태는 메모리가 아니라 SQLite에 둔다. 재시작하면 알림 설정이 사라진다.
 5. 목록 조회 `limit=100` → 100개를 넘으면 다음 페이지까지 읽는다.
