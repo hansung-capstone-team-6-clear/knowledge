@@ -8,6 +8,7 @@ sources:
   - "raw/Capstone Eureka Process - 02 desk-pet-architecture 다이어그램.md"
   - "raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md"
   - "raw/Capstone Eureka Process - 10-01 기업 미팅 기록.md"
+  - "raw/desk-pet-backend-architecture.md"
 related:
   - "[[wiki/desk-pet-interface-contracts|Desk Pet Interface Contracts]]"
   - "[[wiki/proactive-deadline-alert|Proactive Deadline Alert]]"
@@ -65,6 +66,20 @@ Backend 처리 결과는 **Output Controller**가 TTS 문장·LED 상태·LCD �
 Eureka 연동에서도 그대로 쓸 수 있다는 것이 이 구조의 핵심 근거다(04. Backend § 2-7). NFR-12("Eureka 또는 LLM
 구현을 바꿔도 Hardware Layer를 직접 수정하지 않는다")와도 대응한다.
 
+### 개정 다이어그램 (archify `Desk Pet Backend Architecture`, 2026-10-08 캡처)
+
+같은 다이어그램의 개정판(`raw/desk-pet-backend-architecture.md`)은 위 Notion 첨부본과 다음이 다르다.
+
+- **LLM Service·MCP Client가 별도 노드로 추가**: 경량 Intent Model이 복잡하거나 confidence가 낮은 요청만
+  LLM Service로 넘기고, LLM이 고른 도구는 MCP Client가 구조화 호출한다. 두 결과 모두 Orchestrator가
+  **검증한 뒤** Application Service로 라우팅한다. LLM/MCP → Eureka 직접 변경 경로는 없다.
+- **재질문은 데이터 무변경**: clarification이 필요하면 Orchestrator가 바로 OutputService로 보낸다.
+- **영속화 미확정으로 후퇴**: `ReminderRepositoryPort`·`DatabaseAdapter`가 빠지고 "Persistence remains undecided"로
+  표기됐다. `MockTaskAdapter`(test-only)도 다이어그램에서 빠졌다(엣지 key 11·12·17 공백이 이 제거의 흔적).
+- **응답 채널 분리**: 음성은 `POST /api/voice`로 업로드하고 STT는 서버에서 한다. 일반 응답은 HTTP Response로
+  Pi에 돌려주고, 서버가 먼저 보내는 출력(`output`·`proactive_alert`)만 `OutputPublisherPort` → `WebSocketAdapter`를 쓴다.
+- **TTS 합성 위치**: OutputService는 TTS 문장·LCD 표정/텍스트만 만들고, 음성 합성(Edge-TTS)과 LED·LCD 제어는 Pi가 맡는다.
+
 ### 처리 위치 원칙
 
 - **Pi / 로컬**: PTT 상태, 녹음, LED·LCD·스피커 제어, 장치·네트워크 상태 확인, 오프라인 시계, (가능하면) 경량 Intent.
@@ -92,4 +107,7 @@ Eureka 연동에서도 그대로 쓸 수 있다는 것이 이 구조의 핵심 �
 
 - 배포 형태 미정: AWS Lambda에서 상시 WebSocket·Polling Scheduler를 어떻게 유지할지 (needs-update).
 - Pi↔Backend 음성 전송 방식이 문서마다 다르다 — HTTPS `POST /api/voice` 업로드(IVoiceUpload) vs WebSocket PCM 스트림(9/30 안).
+  개정 다이어그램(2026-10-08)은 HTTP 업로드 + 서버 STT로 그렸다 — 팀 확정 여부 확인 필요.
+- 알림 이력·중복 방지 상태 저장소: 개정 다이어그램에서 `DatabaseAdapter`가 빠져 미확정 상태다 (needs-update).
+- TTS 위치가 문서마다 다르다 — 하드웨어 권장안은 서버/API TTS, 개정 다이어그램은 Pi의 Edge-TTS.
 - Second Brain 구현체 미정 — 백엔드 DB, Notion API, 팀 knowledge vault 중 무엇을 쓸지.

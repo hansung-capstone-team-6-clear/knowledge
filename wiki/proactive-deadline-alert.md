@@ -8,6 +8,7 @@ sources:
   - "raw/Capstone Eureka Process - 02 시스템 설계.md"
   - "raw/Capstone Eureka Process - 04 Backend.md"
   - "raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md"
+  - "raw/desk-pet-backend-architecture.md"
 related:
   - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
   - "[[wiki/eureka-process-api|Eureka Process API]]"
@@ -58,6 +59,13 @@ Eureka Process는 마감 도달·상태 변경을 알려주는 Push/Webhook이 �
 | 알림 시간 변경 | 기존 설정 무효화 후 새 시점 저장, 이전 시점에는 알림 없음 |
 | 대상 업무 불명확 | "어떤 보고서를 말씀하시는 건가요?"로 재질문, 확정 전에는 아무것도 바꾸지 않음. 시점 미지정이면 기본 60분 |
 
+### 개정 다이어그램의 컴포넌트 경로 (2026-10-08)
+
+`SchedulerAdapter`는 polling 주기 실행만 하고 판단은 `ReminderService`가 한다: `TaskPort`로 업무 조회 →
+완료 업무 제외 → 사용자 지정 `reminderAt` 우선, 없으면 `dueAt` 1시간 전 → 중복 알림 방지 →
+OutputService → OutputPublisherPort → WebSocketAdapter → Pi. 기본 60분은 이 개정판에서 **ReminderService 정책**으로
+명시됐다(LLM은 `reminderAt` 미지정 시 `null`만 반환). 중복 방지 상태의 저장 구현체는 미확정이다.
+
 ### 성공 조건 (요약)
 
 - 지정 시점에 미완료 업무를 정확히 탐지하고 사용자 요청 없이 알림이 발생한다.
@@ -81,5 +89,6 @@ Eureka Polling으로 바뀐다.
 
 - **Polling 주기 미확정 (needs-update)**: 9/30 김지훈 안은 1분, 중간발표 대본과 Mock Server 기본값(`POLLING_SECONDS=300`)은 5분이다.
 - 알림 LED 색이 문서마다 다르다 — 대표 시나리오는 노란색 점멸인데, LED 상태 정의에서 노란색 점멸은 `LISTENING`이고, 네트워크 복구 알림은 파란색 점멸이다. 알림 전용 상태(예: `PROACTIVE_ALERT`)를 따로 정할지 결정이 필요하다.
-- 기본 알림값(60분) 적용 책임을 AI가 아닌 Backend 정책으로 옮기자는 의견(10/7 댓글)이 반영 대기 중이다.
+- 기본 알림값(60분) 적용 책임을 AI가 아닌 Backend 정책으로 옮기자는 의견(10/7 댓글)은 개정 다이어그램(2026-10-08)의
+  계약에 반영됐다(ReminderService 적용, LLM은 `null`) — 다른 설계 문서에도 반영됐는지 확인 필요.
 - 알림 이력 저장소(Backend DB vs Second Brain)가 아직 둘 다 후보로 적혀 있다.

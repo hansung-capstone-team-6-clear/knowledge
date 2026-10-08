@@ -9,6 +9,7 @@ sources:
   - "raw/Capstone Eureka Process - 05 Raspberry Pi.md"
   - "raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md"
   - "raw/Capstone Eureka Process - 10-01 기업 미팅 기록.md"
+  - "raw/desk-pet-backend-architecture.md"
 related:
   - "[[wiki/desk-pet-system-architecture|Desk Pet System Architecture]]"
   - "[[wiki/eureka-process-api|Eureka Process API]]"
@@ -80,6 +81,14 @@ RECONNECTING`이고, 재연결 시 Backend가 미전달 알림을 재전송한�
 `hardware_control.{led_state, lcd_expression, lcd_text}`, `audio_stream_url` 형식을 제안했다. Mock의 `tts` 문장은 임시이고,
 최종적으로는 LLM이 상황·맥락으로 생성할 예정이다.
 
+개정 다이어그램에 임베드된 계약(2026-10-08, `raw/desk-pet-backend-architecture.md`, 21개)은 세 번째 형식을 쓴다:
+`event`, `type: deadline_approaching`, `user_id`, `request_id`, `output.tts`, `output.lcd.expression: alert`,
+`output.lcd.text` — **`led` 필드가 없고** `request_id`가 추가됐다. 엔드포인트는 `/ws/hardware/{user_id}`.
+같은 개정판에서 `SendOutputCommand`는 **서버 주도 push 전용**으로 좁혀졌다(일반 음성 요청의 HTTP Response는 이 계약을
+거치지 않음). WebSocket 전송 성공은 기기 재생 확인이 아니며, 재생 ACK는 가정하지 않는다. `GenerateOutput`은 TTS 문장만
+만들고 음성 합성·LED 제어는 Pi 책임이다. 개정판에는 `IBackendConnection`·`IVoiceUpload`·`IDeviceStatusMonitor`·
+`HandleSimpleCommand`·Second Brain 계약이 없고, 대신 `ParseSimpleRequest`(경량 파싱 전용)가 추가됐다.
+
 ### 전체 요청 흐름 (10단계)
 
 User → Hardware(PTT) → STT → Lightweight Intent → Backend → (`requiresLLM`) LLM → (`externalToolRequired`) MCP Tool →
@@ -98,7 +107,8 @@ Hardware ↔ Backend, Backend ↔ AI, Backend ↔ Eureka Process, Backend ↔ Sc
 
 ## Open Questions
 
-- `proactive_alert` 스키마가 두 가지(Mock 형식 vs 9/30 `PROACTIVE_ALERT` 형식)로 공존한다 — 하나로 확정 필요 (needs-update).
+- `proactive_alert` 스키마가 세 가지(Mock 형식 vs 9/30 `PROACTIVE_ALERT` 형식 vs 개정 다이어그램의 `request_id`·무`led` 형식)로 공존한다 — 하나로 확정 필요 (needs-update).
+- `proactive_alert` 전달 실패 시 "재처리 정책"이 개정 계약에 이름만 있고 내용이 없다.
 - 필드 표기 혼용: Backend API는 camelCase(`taskName`, `dueAt`), AI 출력은 snake_case(`task_name`, `due_at`).
 - `ledState` 열거값에 알림 전용 상태가 없다(`IDLE / LISTENING / SPEAKING / ERROR`).
 - WebSocket URL이 `ws://`로 적혀 있으나 NFR-11은 HTTPS(암호화) 통신을 기본으로 한다 → `wss://` 여부 확인.
