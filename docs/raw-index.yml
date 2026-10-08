@@ -1,11 +1,38 @@
 # Raw Index — raw/ 보존소의 자동 생성 색인. 수동 편집 금지.
 # 재생성: vault 루트에서 python3 projects/second-brain/config/scripts/generate_raw_index.py
 # 계약: docs/raw-layout.md § 색인. 사람용 요약: docs/raw-index.md
-generated: "2026-09-16"
-root_files: 0
+generated: "2026-10-08"
+root_files: 2
 root_cap: 200
 screenshots: 0
-by_month: {}
+conversion_originals:
+  pdf: 1
+  hwp: 0
+  doc: 0
+  xlsx: 0
+orphan_originals: []
+by_month:
+  "unknown": 2
 orphans: []
 duplicate_sources: []
-entries: []
+entries:
+  - file: "raw/데스크펫 하드웨어 정리안 (MVP).md"
+    added: "unknown"
+    source: ""
+    refs:
+      - "outputs\\runs\\2026-10-08-ingest-kimji.md"
+      - "wiki\\desk-pet-device-states.md"
+      - "wiki\\desk-pet-hardware-components.md"
+      - "wiki\\desk-pet-hardware-interfaces.md"
+      - "wiki\\desk-pet-hardware-mvp-decisions.md"
+      - "wiki\\desk-pet-mvp-architecture.md"
+      - "wiki\\desk-pet-pi-backend-protocol.md"
+  - file: "raw/데스크펫 MVP 아키텍처.md"
+    added: "unknown"
+    source: "팀 내부 문서 — 데스크펫 MVP 아키텍처.html (로컬 HTML 페이지, URL 없음)"
+    refs:
+      - "outputs\\runs\\2026-10-08-ingest-kimji.md"
+      - "wiki\\desk-pet-device-states.md"
+      - "wiki\\desk-pet-hardware-interfaces.md"
+      - "wiki\\desk-pet-mvp-architecture.md"
+      - "wiki\\desk-pet-pi-backend-protocol.md"
