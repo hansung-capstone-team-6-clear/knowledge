@@ -167,7 +167,8 @@ def main() -> None:
     for pattern in SCAN_GLOBS:
         for path in glob.glob(pattern, recursive=True):
             try:
-                corpus[path] = open(path, encoding="utf-8").read()
+                # glob returns "\"-separated paths on Windows; refs must match on every OS
+                corpus[path.replace(os.sep, "/")] = open(path, encoding="utf-8").read()
             except OSError:
                 pass
 
