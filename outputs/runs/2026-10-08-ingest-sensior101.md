@@ -4,7 +4,7 @@ kind: ingest
 run_date: "2026-10-08"
 author: sensior101
 summary: "Desk Pet 백엔드 아키텍처 HTML(archify) 1건을 raw 캡처로 추출, wiki 노트 1개와 Desk Pet 토픽 신설"
-pr:
+pr: 3
 processed: 1
 new_notes: 1
 updated_notes: 0
