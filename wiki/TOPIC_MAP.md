@@ -5,6 +5,7 @@ Root topic map for `wiki/topics/`.
 ## Root Topics
 
 - [[wiki/topics/knowledge-management|Knowledge Management]]
+- [[wiki/topics/desk-pet|Desk Pet]]
 
 ## Maintenance
 

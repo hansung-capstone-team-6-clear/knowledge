@@ -5,10 +5,11 @@ This index is the entry point for vault queries and ingest deduplication.
 ## Topics
 
 - [[wiki/topics/knowledge-management|Knowledge Management]]
+- [[wiki/topics/desk-pet|Desk Pet]]
 
 ## Articles
 
-_No compiled wiki articles yet._
+- [[wiki/desk-pet-backend-architecture|Desk Pet Backend Architecture]] — Raspberry Pi 음성 데스크 펫 백엔드: STT·의도 분류·LLM/MCP 오케스트레이션, TaskPort↔Eureka, 마감 알림
 
 ## Maintenance
 
