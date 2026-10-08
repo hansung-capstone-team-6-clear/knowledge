@@ -6,12 +6,14 @@ status: draft
 sources:
   - "raw/데스크펫 MVP 아키텍처.md"
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
+  - "raw/deskpet_AI_HW_충돌검토.md"
 related:
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
   - "[[wiki/desk-pet-hardware-components|부품·핀맵·예산]]"
   - "[[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]]"
+  - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -73,8 +75,10 @@ Pi 쪽 인터페이스 상세는 [[wiki/desk-pet-hardware-interfaces|하드웨�
 - 메시지 형식과 필드: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]
 - 상태 전이와 LED/LCD 표시: [[wiki/desk-pet-device-states|장치 상태]]
 - 이 구조로 정리되기까지의 16개 변경 항목: [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]]
+- AI 처리 구조 문서와 이 구조의 충돌 13건: [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions
 
 - `POST /api/voice`가 응답에 최종 출력까지 담는 방식은 Backend 담당과 합의 전이다(2026-10-07 기준) — needs-update.
 - 10초 응답 제한이 STT + Local LLM + Eureka 처리를 실제로 감당하는지 실측 전이다.
+- AI 처리 구조 문서는 최악 약 16초(STT 5 + Intent 1 + LLM 5 + MCP 5)를 잡고 있어 위 10초 제한과 정면으로 부딪힌다 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 1번.

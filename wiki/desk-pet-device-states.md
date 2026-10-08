@@ -6,9 +6,11 @@ status: draft
 sources:
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
   - "raw/데스크펫 MVP 아키텍처.md"
+  - "raw/deskpet_AI_HW_충돌검토.md"
 related:
   - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
+  - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -65,3 +67,4 @@ updated: "2026-10-08"
 
 - 디자인 담당과 `THINKING`(흰색 점멸), `ALERT`(주황 빠른 점멸), `ERROR`(빨강 점멸) 색 확정 필요 — needs-update.
 - `stuckState`의 "비정상적으로 길어지면" 기준 시간이 정해지지 않았다.
+- 재질문 상황의 LCD 표정이 정해지지 않았다(`thinking` 재사용 또는 `question` 추가) — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 10번.

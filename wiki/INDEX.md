@@ -17,6 +17,7 @@ This index is the entry point for vault queries and ingest deduplication.
 - [[wiki/desk-pet-device-states|장치 상태]] — 6개 상태, LED/LCD 표시, 전이 규칙
 - [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]] — WebSocket 이벤트, `POST /api/voice`
 - [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]] — 2026-10-07 변경 16건과 남은 결정
+- [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] — AI 처리 구조 문서와의 충돌 13건(필수 5 · 결정 필요 5)
 
 ## Maintenance
 

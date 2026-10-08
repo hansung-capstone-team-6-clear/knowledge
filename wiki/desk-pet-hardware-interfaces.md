@@ -6,10 +6,12 @@ status: draft
 sources:
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
   - "raw/데스크펫 MVP 아키텍처.md"
+  - "raw/deskpet_AI_HW_충돌검토.md"
 related:
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]"
   - "[[wiki/desk-pet-hardware-components|부품·핀맵·예산]]"
+  - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -47,8 +49,11 @@ Pi 쪽 Python 소프트웨어는 7개 인터페이스로 나뉜다. 입력 2개(
 - 계층 다이어그램 속 배치: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
 - (4)·(5)가 주고받는 메시지: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]
 - (1)·(2)·(3)이 구동하는 부품과 핀: [[wiki/desk-pet-hardware-components|부품·핀맵·예산]]
+- AI 처리 구조 문서와 충돌해 (3)·(5)를 고쳐야 할 수 있는 항목: [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions
 
 - Pi에서 Edge-TTS 합성 시간을 실측해 너무 느리면 서버 합성으로 다시 검토 — needs-update.
 - Edge-TTS는 온라인 서비스를 쓰므로 Wi-Fi 끊김 시 (3)의 `ttsFailure` 경로(LCD 텍스트만)로 떨어질 것으로 보인다 — 추론, 원문에 명시 없음.
+- (5) `IVoiceUpload`: `maxWaitSec` 10초가 AI 쪽 최악 처리 시간(약 16초)보다 짧고, 재질문용 `conversationId` 입력과 `type: clarification`이 없다 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 1·2번, needs-update.
+- (3) `IHardwareOutput`: 재질문할 때 쓸 LCD 표정이 없다(`thinking` 재사용 또는 `question` 추가) — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 10번.

@@ -6,10 +6,12 @@ status: draft
 sources:
   - "raw/데스크펫 하드웨어 정리안 (MVP).md"
   - "raw/데스크펫 MVP 아키텍처.md"
+  - "raw/deskpet_AI_HW_충돌검토.md"
 related:
   - "[[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]"
   - "[[wiki/desk-pet-device-states|장치 상태]]"
   - "[[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]]"
+  - "[[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]"
 created: "2026-10-08"
 updated: "2026-10-08"
 ---
@@ -90,9 +92,13 @@ Pi와 Backend는 두 통로만 쓴다. Backend → Pi 알림·출력은 WebSocke
 - 전체 흐름 속 위치: [[wiki/desk-pet-mvp-architecture|데스크펫 MVP 아키텍처]]
 - 이 메시지를 다루는 Pi 인터페이스: [[wiki/desk-pet-hardware-interfaces|하드웨어 인터페이스]] (4) `IBackendConnection`, (5) `IVoiceUpload`
 - 이전 설계(WebSocket PCM 스트리밍, Backend `state` 이벤트)에서 바뀐 이유: [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]]
+- AI 처리 구조 문서와의 형식 충돌(상태값 `SUCCESS`/`OK`, 시간대, 재질문 연결): [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]]
 
 ## Open Questions
 
 - `POST /api/voice` 신설과 응답에 `output` 포함 — Backend 담당 합의 대기. Mock Server에는 파일을 받아 고정 문장을 돌려주는 가짜 엔드포인트부터 추가할 예정 — needs-update.
 - 모든 메시지에 `request_id` 추가 — Backend 합의 대기 — needs-update.
 - `type` 값 목록은 `task_created | task_completed | ... | error`로만 적혀 있어 전체 목록이 미정이다.
+- AI 쪽 최악 처리 시간이 약 16초라 Pi의 10초 대기와 충돌한다. Backend 상한 9초 이하 + Pi 대기를 그보다 길게 하는 안이 나와 있다 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 1번, needs-update.
+- 재질문 답변을 이전 요청과 잇는 값이 없다. `conversationId` 입력과 `type: clarification` 추가가 제안됐다 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 2번, needs-update.
+- 시각 필드는 Mock과 같이 `+09:00`을 붙이는 쪽으로 AI 문서를 맞추자는 제안이 있다 — [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 8번.
