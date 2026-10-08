@@ -1,6 +1,6 @@
 # AI 레이어
 
-- 코드: `desk-pet-backend` 레포의 `ai.py` (AI 전용 레포는 만들지 않는다)
+- 코드: `desk-pet-backend` 레포의 `services/ai.py` (AI 전용 레포는 만들지 않는다)
 - 계약: `../contracts.md` § 3 (AI 출력)
 - 구조: `../architecture.md`
 

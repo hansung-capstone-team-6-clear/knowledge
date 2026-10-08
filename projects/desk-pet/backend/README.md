@@ -4,33 +4,30 @@
 - 계약: `../contracts.md` (전체)
 - 구조: `../architecture.md`
 
-## 1차 모듈 구성 (제안)
+## 레포 구조
+
+`hansung-capstone-team-6-clear/desk-pet-backend#1`에서 셋업했다. 폴더별 역할은 레포의 README가 정본이다.
 
 ```text
 src/desk_pet_backend/
-  main.py      FastAPI: /voice · /text · /ws/{deviceId} · /health, 디바이스 토큰 확인
-  ai.py        LLM 1회 호출 → contracts § 3 JSON, 스키마 검증
-  tasks.py     action 실행 + 정책 + 응답 문장 템플릿
-  eureka.py    Eureka HTTP 어댑터 (EUREKA_MODE=real 또는 mock)
-  reminder.py  60초 폴링 루프, 알림 판단, 재연결 시 재전송
-  db.py        SQLite (reminders · alerts · pending)
-  config.py    환경 변수 읽기
-mocks/         Eureka mock (eureka.py의 mock 모드가 사용)
-tests/         단위 테스트 + tests/eval/ 평가셋
+├── main.py      앱 진입점, /health
+├── config.py    환경 변수
+├── schemas.py   contracts.md를 코드로 옮긴 Pydantic 모델
+├── api/         ① 입구: /voice, /text, /ws (Controller 역할)
+├── services/    ② 규칙·흐름: tasks.py, ai.py, reminder.py
+├── eureka.py    ③ 바깥 연결: EurekaClient(real) + EurekaMock(mock)
+└── db.py        ③ 바깥 연결: SQLite (reminders · alerts · pending)
+tests/           자동 테스트, eval/ 평가셋, integration/ PoC 스크립트
+mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 ```
 
-헥사고날 계층(Port·Adapter·Service)은 1차에서 쓰지 않는다. 교체가 실제로 필요한 곳은 Eureka(real/mock) 하나뿐이고,
-그건 `eureka.py` 안의 모드 전환으로 충분하다.
+- 호출 방향은 `api/ → services/ → eureka.py, db.py` 한쪽뿐이다.
+- MVC를 그대로 쓰지 않는 이유: 화면(View)이 없는 API 서버다. 응답 JSON 모양(`schemas.py`)이 View에 가장 가깝다.
+- 기능별 폴더 대신 역할별 폴더를 쓰는 이유: 기능이 두 개(음성 요청, 마감 알림)뿐이다. 5개 이상이 되면 기능별 폴더를 검토한다.
+- 헥사고날 Port는 쓰지 않는다. 교체가 필요한 곳은 Eureka(real/mock) 하나이고, `eureka.py`의 `get_eureka()`로 충분하다.
 
-## 레포에서 정리할 것 (2026-10-08 기준)
-
-| 항목 | 현재 | 1차 제안 |
-| --- | --- | --- |
-| 디렉터리 | 헥사고날 빈 폴더 (`application/ports`, `application/services`, `domain/*`, `infrastructure/*`) | 위 모듈 7개 평면 구조 |
-| `.env.example` | `EUREKA_USERNAME`/`EUREKA_PASSWORD`, `OPENAI_*`, `MCP_*` | PoC의 실제 인증은 `x-api-key` → `EUREKA_API_KEY`. `LLM_API_KEY`, `DEVICE_TOKEN`, `EUREKA_MODE` 추가, `MCP_*` 제거 |
-| Mock 서버 | 레포 `mocks/mock_server` (v0.1, 상태값 `completed`)와 Notion 첨부 Mock v2 (상태값 `doing`) 두 버전 공존 | 하나로 합치고 상태값은 Eureka 실제 값 (`todo`/`doing`/`done`/`hold`) |
-| 인터페이스 문서 | `docs/interfaces/backend_interfaces.md` (REST 5개, Intent, MCP) | `contracts.md`로 대체 |
-| `docs/` | 임시 보관, knowledge 레포로 이전 예정 | 이전 위치는 이 vault의 `projects/desk-pet/`. 이전 확인 후 레포 `docs/` 삭제 |
+셋업 PR에서 함께 정리한 것: 빈 헥사고날 폴더 삭제, `.env.example`을 `EUREKA_API_KEY`(x-api-key) 기준으로 변경,
+`pyproject.toml` BOM 제거(설치 실패 원인), MCP·OpenAI·APScheduler 의존성 제거, `mocks/`·`docs/`를 참고용으로 표시.
 
 ## 구현 체크리스트 — Mock에서 실제 Eureka로
 

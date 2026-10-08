@@ -16,19 +16,21 @@
 ## 구조
 
 ```text
-[Raspberry Pi] Hardware 레포 raspberry-pi/ — Python 프로세스 1개
-  button.py    누름 → LED LISTENING·녹음 / 뗌 → LCD THINKING·업로드
-  output.py    type → LED·LCD 매핑표, edge-tts로 음성 합성·재생
-  main.py      POST /voice, WS /ws/{deviceId} 수신·재연결
+[Raspberry Pi] Hardware 레포 app/ — Python 프로세스 1개
+  main.py            버튼·알림 이벤트 → 상태 → 녹음·업로드·재생
+  states.py          상태별 LED·LCD 매핑표
+  devices/           button · audio · led · lcd
+  backend_client.py  POST /voice, WS /ws/{deviceId} 수신·재연결
+  tts.py             edge-tts로 음성 합성·재생
       │ WAV 업로드 (HTTP)            ▲ 응답 {type, text}
       ▼                              │ 선제 알림 proactive_alert (WS)
-[Backend] desk-pet-backend — FastAPI 프로세스 1개, Docker (1차: 팀원 노트북)
-  main.py      /voice · /text · /ws/{deviceId} · /health
-  ai.py        오디오(또는 텍스트) + 맥락 → LLM 1회 → JSON {transcript, action, args}
-  tasks.py     action 실행 + 정책(기본값·대상 검증·성공 확인) + 응답 문장 템플릿
-  eureka.py    Eureka HTTP 어댑터 (필드명·시간 변환은 여기서만) + mock 전환
-  reminder.py  60초 루프 → 알림 판단 → 상태 재확인 → WS 전송
-  db.py        SQLite 테이블 3개
+[Backend] desk-pet-backend src/desk_pet_backend/ — FastAPI 프로세스 1개, Docker (1차: 팀원 노트북)
+  api/                  /voice · /text · /ws/{deviceId} (main.py에 /health)
+  services/ai.py        오디오(또는 텍스트) + 맥락 → LLM 1회 → JSON {transcript, action, args}
+  services/tasks.py     action 실행 + 정책(기본값·대상 검증·성공 확인) + 응답 문장 템플릿
+  services/reminder.py  60초 루프 → 알림 판단 → 상태 재확인 → WS 전송
+  eureka.py             Eureka HTTP 클라이언트 (필드명·시간 변환은 여기서만) + mock
+  db.py                 SQLite 테이블 3개
       │ HTTPS (x-api-key)
       ▼
 [외부] Eureka Process API · LLM API (1차 기본값: Gemini 무료 등급)
@@ -39,12 +41,15 @@
 | 위치 | 맡는 일 | 맡지 않는 일 |
 | --- | --- | --- |
 | Pi | 버튼, 녹음, 업로드, TTS 합성·재생, LED/LCD 표시, WS 재연결 | 업무 판단, Eureka 호출, LLM API 키 보관 |
-| Backend `main.py` | 엔드포인트, 디바이스 토큰 확인 | 비즈니스 규칙 |
-| Backend `ai.py` | LLM 1회 호출, 출력 JSON 스키마 검증 | 업무 실행 |
-| Backend `tasks.py` | action 실행, 기본 알림 60분, itemId 검증, Eureka 성공 확인 후 응답 | HTTP 세부 |
+| Backend `api/` | 엔드포인트, 디바이스 토큰 확인 | 비즈니스 규칙 |
+| Backend `services/ai.py` | LLM 1회 호출, 출력 JSON 스키마 검증 | 업무 실행 |
+| Backend `services/tasks.py` | action 실행, 기본 알림 60분, itemId 검증, Eureka 성공 확인 후 응답 | HTTP 세부 |
+| Backend `services/reminder.py` | 폴링, 알림 판단, 재연결 시 재전송 | 음성 처리 |
 | Backend `eureka.py` | 요청·응답 필드 매핑, epoch ms 변환, 목록 페이지 처리, 오류 본문 확인 | 정책 |
-| Backend `reminder.py` | 폴링, 알림 판단, 재연결 시 재전송 | 음성 처리 |
 | Backend `db.py` | 알림 설정·알림 이력·재질문 대기 저장 | 업무 원본 (Eureka가 원본) |
+
+코드 레포 구조는 각 레포 README가 정본이다: `desk-pet-backend`(`api/` → `services/` → `eureka.py`·`db.py`),
+`Hardware`(`setup/` → `parts/` → `app/`).
 
 LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.md` § 5). Backend는 `type`만 보낸다.
 
@@ -141,10 +146,10 @@ LLM 호출은 `ai.py`의 함수 하나 뒤에 두므로, 전환은 설정값 변
 | 기존 (Notion 02 시스템 설계, backend 레포 docs) | 1차 |
 | --- | --- |
 | 1계층 Device + 2계층 Voice & Local Processing | Pi 프로그램 1개 |
-| 3계층 STT / 경량 Intent / LLM·MCP / 사용자 요청 해석 | `ai.py` (LLM 1회) |
-| 3계층 Backend API / Scheduler / DB / Eureka Adapter / WebSocket | `main.py`, `reminder.py`, `db.py`, `eureka.py` |
+| 3계층 STT / 경량 Intent / LLM·MCP / 사용자 요청 해석 | `services/ai.py` (LLM 1회) |
+| 3계층 Backend API / Scheduler / DB / Eureka Adapter / WebSocket | `api/`, `services/reminder.py`, `db.py`, `eureka.py` |
 | Output Controller (TTS·LED·LCD 명령 생성) | 응답 `type` + Pi 매핑표, TTS는 Pi |
-| TaskService · ReminderService · OutputService + Port 3개 | `tasks.py`, `reminder.py` + `eureka.py`의 real/mock 전환 |
+| TaskService · ReminderService · OutputService + Port 3개 | `services/tasks.py`, `services/reminder.py` + `eureka.py`의 real/mock 전환 |
 | Backend REST 5개 (`/api/tasks` 등) | 없음 — Pi는 `/voice`만 호출 |
 | `backend_interfaces.md` § 10 미결정 1·2 (알림 저장, 중복 방지) | SQLite `reminders`·`alerts`, PK로 중복 방지 |
 | 미결정 3 (미전달 알림 재처리) | 재연결 시 상태 재확인 후 재전송 |

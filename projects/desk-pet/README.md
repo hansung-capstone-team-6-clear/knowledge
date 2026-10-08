@@ -91,7 +91,7 @@ projects/desk-pet/
 | --- | --- | --- | --- |
 | 하드웨어 | `hardware/` | `Hardware` 레포 | 하드웨어·임베디드 |
 | 백엔드 | `backend/` | `desk-pet-backend` 레포 | 아키텍처·서버 |
-| AI | `ai/` | `desk-pet-backend` 레포의 `ai.py` | AI·LLM |
+| AI | `ai/` | `desk-pet-backend` 레포의 `services/ai.py` | AI·LLM |
 | 공통 | `architecture.md`, `contracts.md` | — | 팀장(기획) 주관, 전원 리뷰 |
 
 ### 왜 레이어별 프로젝트로 나누지 않았나
@@ -108,6 +108,7 @@ projects/desk-pet/
 ## Log
 
 - 2026-10-08: 프로젝트 폴더 생성. 기술 검토, 1차 최소 비용 조사, 1차 아키텍처·계약 초안 작성.
+- 2026-10-08: 코드 레포 구조 셋업 PR — `desk-pet-backend#1`(api → services → eureka·db), `Hardware#1`(setup → parts → app).
 
 ## Outputs
 

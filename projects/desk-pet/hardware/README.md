@@ -45,18 +45,26 @@ Notion "05 Raspberry Pi" 핀맵 **표**를 기준으로 하고, 버튼을 추가
 | LCD 드라이버 문제 | 1차 시연은 LED + 음성만으로 |
 | 버튼 부품 지연 | 브레드보드용 택트 스위치 |
 
-## Hardware 레포 구성 (제안)
+## Hardware 레포 구조
 
-| 폴더 | 넣을 것 |
-| --- | --- |
-| `button-mic/`, `Speaker/`, `lcd/`, `led/` | 부품별 배선 사진, 단독 테스트 스크립트, 테스트 결과 |
-| `raspberry-pi/` | 통합 프로그램: `main.py`, `button.py`, `output.py`, `.env.example` |
+`hansung-capstone-team-6-clear/Hardware#1`에서 셋업했다. 폴더 순서가 곧 작업 순서다. 폴더별 역할은 레포의 README가 정본이다.
 
-`raspberry-pi/` 통합 프로그램의 책임:
+```text
+Hardware/
+├── setup/      ① Pi 처음 준비: OS, 패키지, config.txt, 파이썬 환경
+├── parts/      ② 부품 단독 테스트: audio(마이크+앰프+스피커) → button → led → lcd
+└── app/        ③ 통합 프로그램
+    ├── main.py            흐름: 버튼·알림 이벤트 → 상태 → 녹음·업로드·재생
+    ├── states.py          상태 6개별 LED 색·LCD 표정 (contracts § 5)
+    ├── backend_client.py  POST /voice, WS 수신 (30초 ping, 5초 재연결)
+    ├── tts.py             edge-tts(`ko-KR-SunHiNeural`) 합성·재생
+    ├── devices/           button · audio · led · lcd
+    └── assets/faces/      표정 PNG (240×280)
+```
 
-1. 버튼 누름 → LISTENING + 녹음, 뗌 → THINKING + `POST /voice`
-2. 응답 `text`를 edge-tts(`ko-KR-SunHiNeural`)로 합성해 재생, `type`에 맞춰 LED/LCD 변경
-3. WS 연결 유지: 30초 ping, 끊기면 5초 간격 재연결, `proactive_alert` 수신 시 ALERT 상태로 재생
+- MVC를 쓰지 않는 이유: 화면을 그리는 앱이 아니라 "이벤트 → 상태 → 장치" 프로그램이다. 비유하면 `states.py`가 View, `main.py`가 Controller, 백엔드가 Model이다.
+- 마이크는 앰프와 I2S 클럭을 공유해서 `parts/audio`로 묶었다.
+- `parts/`에서 검증한 코드를 `app/devices/`로 옮긴다. `main.py`는 `devices/` 함수만 부른다.
 
 ## 이 폴더에 둘 문서
 
