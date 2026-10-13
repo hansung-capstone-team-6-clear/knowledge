@@ -278,6 +278,7 @@ Claude에 넘기는 job spec은 스크립트 안에 사본이 없다 — [`vault
 ## 프로젝트
 
 - [second-brain](projects/second-brain/) — `active` · 이 vault의 구조·워크플로우 지속 개선
+- [eureka-desk-pet](projects/eureka-desk-pet/) — `active` · Eureka Process 연동형 업무관리 AI 데스크 펫 (캡스톤 6팀). 폴더 구조와 문서 규칙은 [projects/eureka-desk-pet/README.md](projects/eureka-desk-pet/README.md)
 
 프로젝트 상태·마감·다음 행동의 진실원은 각 프로젝트 README의 frontmatter다. 자세한 내용은 [projects/README.md](projects/README.md)를 참조한다.
 

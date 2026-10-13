@@ -1,0 +1,161 @@
+# eureka-desk-pet 1차 아키텍처 (최소 비용 MVP)
+
+> 상태: **제안 (2026-10-08)** — 팀 검토 후 확정.
+> 근거: [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]],
+> [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|1차 최소 비용 조사]].
+> 레이어 간 형식은 `contracts.md`가 정본이다.
+> Pi 쪽 구조·통신·상태는 2026-10-07 하드웨어 결정([[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]])을 그대로 따른다 —
+> 음성은 HTTP 한 번, TTS는 Pi(Edge-TTS), LED 색은 Pi, 서보·VAD 제외. 이 문서는 그 위에 Backend·AI를 단순화한 안이다.
+
+## 원칙
+
+1. **실행 단위는 2개다.** Raspberry Pi 프로그램 1개, Backend 프로세스 1개. 나머지는 외부 API.
+2. **업무를 바꾸는 주체는 Backend 하나다.** LLM은 "무엇을 할지"를 JSON으로 답할 뿐이고,
+   실행·검증·성공 판단은 Backend가 한다.
+3. **1차는 월 운영비 0원을 목표로 한다.** 유료 전환은 § 1차 기술 선택의 전환 조건을 만족할 때만 한다.
+4. **1차에 없는 기능은 § 2차 고도화에 적어 두고, 1차 완료 전에는 손대지 않는다.**
+
+## 구조
+
+```text
+[Raspberry Pi] Hardware 레포 app/ — Python 프로세스 1개
+  main.py            버튼·알림 이벤트 → 상태 → 녹음·업로드·재생
+  states.py          상태별 LED·LCD 매핑표
+  devices/           button · audio · led · lcd
+  backend_client.py  POST /api/voice, WS /ws/hardware/{user_id} 수신·재연결
+  tts.py             edge-tts로 음성 합성·재생
+      │ WAV 업로드 (HTTP)            ▲ 응답 {status, type, output}
+      ▼                              │ 선제 알림 proactive_alert (WS)
+[Backend] desk-pet-backend src/desk_pet_backend/ — FastAPI 프로세스 1개, Docker (1차: 팀원 노트북)
+  api/                  /api/voice · /api/text · /ws/hardware/{user_id} (main.py에 /health)
+  services/ai.py        오디오(또는 텍스트) + 맥락 → LLM 1회 → JSON {transcript, action, args}
+  services/tasks.py     action 실행 + 정책(기본값·대상 검증·성공 확인) + 응답 문장 템플릿
+  services/reminder.py  60초 루프 → 알림 판단 → 상태 재확인 → WS 전송
+  eureka.py             Eureka HTTP 클라이언트 (필드명·시간 변환은 여기서만) + mock
+  db.py                 SQLite 테이블 3개
+      │ HTTPS (x-api-key)
+      ▼
+[외부] Eureka Process API · LLM (방식 결정 필요 — contracts § 3)
+```
+
+## 레이어 책임
+
+| 위치 | 맡는 일 | 맡지 않는 일 |
+| --- | --- | --- |
+| Pi | 버튼, 녹음, 업로드, TTS 합성·재생, LED/LCD 표시, WS 재연결 | 업무 판단, Eureka 호출, LLM API 키 보관 |
+| Backend `api/` | 엔드포인트, 디바이스 토큰 확인 | 비즈니스 규칙 |
+| Backend `services/ai.py` | LLM 1회 호출, 출력 JSON 스키마 검증 | 업무 실행 |
+| Backend `services/tasks.py` | action 실행, 기본 알림 60분, item_id 검증, Eureka 성공 확인 후 응답 | HTTP 세부 |
+| Backend `services/reminder.py` | 폴링, 알림 판단, 재연결 시 재전송 | 음성 처리 |
+| Backend `eureka.py` | 요청·응답 필드 매핑, epoch ms 변환, 목록 페이지 처리, 오류 본문 확인 | 정책 |
+| Backend `db.py` | 알림 설정·알림 이력·재질문 대기 저장 | 업무 원본 (Eureka가 원본) |
+
+코드 레포 구조는 각 레포 README가 정본이다: `desk-pet-backend`(`api/` → `services/` → `eureka.py`·`db.py`),
+`Hardware`(`setup/` → `parts/` → `app/`).
+
+LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.md` § 5). Backend는 `status`·`type`과 `output`(tts 문장, lcd 표정·문구)만 보낸다.
+
+## 처리 흐름
+
+### 음성 요청 — 요청 한 번, 응답 한 번
+
+1. 버튼을 누르면 Pi가 즉시 LISTENING으로 바꾸고 녹음한다. 버튼→LED 100ms 요구는 Pi 안에서 충족한다.
+2. 버튼을 떼면 THINKING 표정으로 바꾸고 `POST /api/voice`로 WAV를 올린다.
+3. Backend가 Eureka 미완료 목록과 `pending`(재질문 대기)을 조회한 뒤, `ai.py`가 오디오와 맥락을 LLM에
+   **1회** 전달해 `{transcript, action, args}`를 받는다.
+4. `tasks.py`가 검증·실행하고 결과를 템플릿 문장으로 만든다. 응답 문장을 위해 LLM을 두 번 부르지 않는다.
+5. 응답 `{status, type, output}`을 받은 Pi가 `output.tts`를 Edge-TTS로 합성·재생하고 IDLE로 돌아간다.
+
+### 선제 알림
+
+1. `reminder.py`가 60초마다 Eureka 목록을 조회한다 (`done` 제외).
+2. `마감 − offset_minutes ≤ 지금 < 마감`이고 `alerts`에 (item_id, due_at, offset_minutes) 기록이 없으면 대상이다.
+3. 보내기 직전 상태 API로 다시 확인하고, `done`이면 보내지 않는다.
+4. 문장은 템플릿으로 만든다 ("보고서 검토 마감이 1시간 남았어요.").
+5. WS로 보내고 `alerts`에 기록한다. 연결이 없어 못 보내면 `undelivered`로 남기고, Pi가 재연결하면
+   3~5단계를 다시 실행한다 (남은 시간도 새로 계산).
+
+### 재질문
+
+1. 대상 업무가 여러 개이거나 날짜가 모호하면 LLM이 `clarify`와 질문을 돌려주고, 응답 `type`은 `clarification`이 된다.
+2. Backend는 원래 요청을 `pending`에 60초 동안 저장하고 질문을 응답한다.
+3. 사용자가 다시 버튼을 눌러 답하면, 음성 요청 3단계에서 `pending`을 맥락으로 함께 넣는다.
+   확정되면 실행하고 `pending`을 지운다.
+
+## 1차 기술 선택 (최소 비용)
+
+| 구성요소 | 1차 선택 | 월 비용 | 전환 조건 | 전환 대상 |
+| --- | --- | --- | --- | --- |
+| 호스팅 | 팀원 노트북에서 Docker, Pi와 같은 Wi-Fi | 0원 | 시연 장소에서 노트북 상시 구동 불가 | AWS 무료 플랜 크레딧으로 소형 EC2 |
+| 음성 인식 + 해석 | **제안**: Gemini Flash-Lite 무료 등급, 오디오 직접 입력 → JSON 1회 (팀 결정은 서버 Local LLM — 결정 필요, contracts § 3) | 0원 | 무료 한도 초과, 평가셋 18/20 미달, 실제 업무 데이터 필요 | Gemini 유료 (월 약 $1.5) 또는 STT 분리 + Claude Haiku 4.5 (월 약 $5.6) |
+| TTS | Pi에서 edge-tts (`ko-KR-SunHiNeural`) | 0원 | 서비스 장애·차단 | Google Cloud TTS (Standard 월 400만 자 무료) |
+| 저장소 | SQLite 파일 1개 | 0원 | Backend가 2대 이상이 될 때 | 2차에서 결정 |
+| 하드웨어 | 구매 부품 + 교내 자원 (Pi 4B, 3D 프린터) | 일회성 46,020원 | I2S 오디오 실패 | USB 마이크·스피커 |
+
+산정 근거와 출처는 [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|최소 비용 조사]]에 있다.
+LLM 호출은 `ai.py`의 함수 하나 뒤에 두므로, 전환은 설정값 변경으로 끝나야 한다.
+
+## 1차에서 뺀 것
+
+| 항목 | 빼는 이유 | 2차에서 다시 넣는 조건 |
+| --- | --- | --- |
+| 경량 Intent 모델 | 거의 모든 발화가 날짜·업무명 추출을 요구해 결국 LLM을 호출 | 측정 결과 특정 발화의 LLM 지연이 병목일 때 규칙 기반 단축 경로 |
+| MCP | 도구가 전부 Backend 내부 함수라 LLM 출력 JSON으로 충분 | 외부 클라이언트(예: Claude Desktop)에 도구를 공개할 때 |
+| 로컬 LLM 실서비스 적용 | Pi 4B 1B 모델 요청당 40~55초(추정), GPU 상시 $472/월 | 비교 실험(`ai/README.md`)에서 품질·지연 기준을 넘을 때 |
+| Output Controller | Pi 상태표 + 응답 `output`으로 대체 | — |
+| Second Brain 연동 (FR-16/17) | 기획서에서도 "향후 확장"으로 분류 | 1차 완료 후 |
+| 서보 모터 | 기능 요구사항에 없음, LED와 PWM 충돌 가능, 5V 전원 부담 | 1차 완료 후 |
+| VAD, wake word | PTT 버튼이 발화 구간을 정함 | — |
+| HTTPS/WSS (NFR-11) | 1차 서버는 같은 Wi-Fi 안의 노트북 — **팀 합의 필요** | 외부 서버로 배포할 때 필수 |
+| Lambda 배포 | WS·스케줄러·상태 저장이 리소스 4~5개로 나뉨 | 운영 환경 전환 시 검토 |
+| 다중 사용자·팀 알림 전파 | 기획서 4-2(6) 구현 제외 범위 | 2차, `user_id`와 기기 매핑부터 |
+
+## 2차 고도화 (우선순위 순)
+
+1. 외부 서버 배포 + HTTPS/WSS — AWS 무료 플랜(가입 후 6개월)은 배포 직전에 가입해 기간을 확보한다.
+2. 모델 비교·유료 전환 — 평가셋의 정확도·지연 결과로 결정.
+3. 로컬 LLM 비교 실험 — AI 평가 산출물. 팀원 GPU PC를 먼저 쓴다.
+4. 전달 확인(Pi ack), 요청 ID 기반 로그 추적 (NFR-09).
+5. 서보 모터 표현, 하우징 개선.
+6. 다중 디바이스·팀 알림 전파.
+7. Second Brain 맥락 기억 (FR-16/17).
+8. Lambda 등 서버리스 전환 검토.
+
+## 1차 일정
+
+| 기한 | Backend·AI | Pi | 완료 기준 |
+| --- | --- | --- | --- |
+| 10/18 | `contracts.md` 확정, `/api/text` → LLM → 실제 Eureka | 오디오 overlay, 버튼 | 평가셋 20개 중 18개 성공 · `arecord`/`aplay` 둘 다 동작 |
+| 10/31 | `/api/voice` 전체 흐름 | LED/LCD 매핑, WS 수신 | 노트북 마이크 기준 5초 이내 응답 |
+| 11/14 | `reminder.py` 실연동 + SQLite | Pi와 Backend 실제 연결 | 알림 3분 시연 성공 |
+| 11/28 | 시나리오 리허설 | 하우징 조립 | 기획서 시나리오 3개 + 재질문 시나리오 연속 성공 |
+| 12월 | 소음·오인식 테스트 | 마감 정리 | 최종 발표 |
+
+알림 시연은 "마감 3분 뒤 업무 + 2분 전 알림"으로 등록하면 1분 안에 알림이 온다. 시계를 조작하는 디버그 기능은 두지 않는다.
+
+## 막혔을 때의 대안 (Plan B)
+
+| 리스크 | 대안 |
+| --- | --- |
+| I2S 오디오 overlay 실패 | USB 마이크 + USB 스피커 (드라이버 불필요) |
+| LLM 정확도 미달 | 데모 발화 고정 + 마감 변경 전 확인 질문 |
+| 전시장 소음 | `/api/text`로 키보드 입력 시연 |
+| Eureka 장애 | `EUREKA_MODE=mock` |
+| 무료 API 한도·장애 | 유료 등급 전환 (§ 1차 기술 선택) |
+
+## 기존 설계와의 대응
+
+| 기존 (Notion 02 시스템 설계, backend 레포 docs) | 1차 |
+| --- | --- |
+| 1계층 Device + 2계층 Voice & Local Processing | Pi 프로그램 1개 |
+| 3계층 STT / 경량 Intent / LLM·MCP / 사용자 요청 해석 | `services/ai.py` (LLM 1회) |
+| 3계층 Backend API / Scheduler / DB / Eureka Adapter / WebSocket | `api/`, `services/reminder.py`, `db.py`, `eureka.py` |
+| Output Controller (TTS·LED·LCD 명령 생성) | 응답 `output` + Pi 상태표, TTS는 Pi |
+| TaskService · ReminderService · OutputService + Port 3개 | `services/tasks.py`, `services/reminder.py` + `eureka.py`의 real/mock 전환 |
+| Backend REST 5개 (`/api/tasks` 등) | 없음 — Pi는 `/api/voice`만 호출 |
+| `backend_interfaces.md` § 10 미결정 1·2 (알림 저장, 중복 방지) | SQLite `reminders`·`alerts`, PK로 중복 방지 |
+| 미결정 3 (미전달 알림 재처리) | 재연결 시 상태 재확인 후 재전송 |
+| 미결정 4 (AI 컴포넌트 간 인터페이스) | `ai.py` 함수 하나, 출력은 `contracts.md` § 3 |
+| 10/07 하드웨어 결정 16건 (Mock 형식 유지, `/api/voice`, Pi TTS, 상태 6종) | 그대로 채택 — `contracts.md` § 1·2·5 |
+| 10/07 결정 16번 (서버 Local LLM) | 결정 필요 — 1차는 API 제안, Local LLM은 비교 실험 (`ai/README.md`) |
+| AI–HW 충돌 검토 13건 | 9번(LLM 방식)을 뺀 미결 항목은 `contracts.md`가 답을 정함 (§ 변경 이력) |

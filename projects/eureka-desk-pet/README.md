@@ -26,6 +26,9 @@ next_action: "역할별 기술 스택·구조 다이어그램 확정, 인터페�
 Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 개발을 시작했다. 9월 산출물(시나리오·요구사항·정책·
 4계층 구조·인터페이스 초안)과 Eureka API PoC, Mock Server 검증이 끝났다.
 
+2026-10-08 멘토 기술 검토: 구현 가능, 단 AI·백엔드 레이어 단순화 필요
+→ [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]]. 구현 기준은 `architecture.md`와 `contracts.md`다.
+
 ## Purpose
 
 한성대학교 기업연계 AI 캡스톤 디자인 수업에서 클리어픽(6팀)이 협업 기업 레몬클라우드와 진행하는 프로젝트.
@@ -59,6 +62,58 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 - AI: LLM 구조 후보 결정, Local LLM 사용 여부, 경량 모델 + Local LLM 구조, Tool/Skill 구조 조사.
 - Hardware: 부품 확정과 예산안(부품 / LLM 구독 비용 분리), 구조 다이어그램, Backend와의 JSON 인터페이스.
 
+## Folder Structure
+
+```text
+projects/eureka-desk-pet/
+├── README.md          ← 지금 이 파일: 프로젝트 상태(frontmatter)·팀·폴더 안내·문서 규칙
+├── architecture.md    ← 1차(MVP) 구조, 레이어 책임, 처리 흐름, 2차 고도화 로드맵 (레이어 공통)
+├── contracts.md       ← Pi·Backend·AI·DB 사이 형식의 단일 진실원 (10/07 하드웨어 결정 기반)
+├── hardware/
+│   └── README.md      ← 하드웨어 레이어: 1차 범위, 핀맵, 먼저 확인할 것, Plan B, Hardware 레포 구조
+├── backend/
+│   └── README.md      ← 백엔드 레이어: desk-pet-backend 구조, Eureka 연동 체크리스트, 응답 시간 예산
+├── ai/
+│   └── README.md      ← AI 레이어: 모델 선택, 프롬프트 입력, 평가셋, 로컬 LLM 비교 실험
+└── outputs/           ← 날짜가 붙는 조사·검토 결과 (스냅샷 — 고치지 않고 새 파일 추가)
+```
+
+> 용어: 이 폴더 문서의 **1차(MVP) / 2차(고도화)**는 구현 단계다. 위 frontmatter `milestones`의 1~4차는 월별 로드맵이고,
+> 1차 MVP는 로드맵 2~3차(10~11월) 동안 만든다.
+
+## How to Use
+
+### 무엇을 어디에 쓰나
+
+| 쓰려는 것 | 위치 |
+| --- | --- |
+| 레이어 공통 구조·흐름 변경 | `architecture.md` |
+| 레이어 간 JSON, AI 출력 형식, DB 스키마 | `contracts.md` |
+| 레이어 내부 결정, 체크리스트, 실험 결과 | `<layer>/README.md` — 길어지면 같은 폴더에 `kebab-case.md` 추가 |
+| 날짜가 붙는 조사·검토·회의 결론 | `outputs/YYYY-MM-DD-<slug>.md` (`templates/query-output.md` 형식) |
+| Notion 등 외부 문서 원문 | vault ingest → `raw/` 원문 + `wiki/desk-pet-*` 정리 |
+| 코드 실행법, 환경 변수 목록 | 각 코드 레포의 README |
+
+### 규칙
+
+1. 레이어 간 형식을 바꾸려면 `contracts.md` PR을 먼저 올리고, merge 후 각 코드 레포에 반영한다.
+2. 1차 범위 밖 아이디어는 `architecture.md` § 2차 고도화에 한 줄로 추가만 한다.
+3. 연락처 같은 개인 정보, API 키·토큰, `.env` 내용은 커밋하지 않는다.
+4. 파일명은 영어 kebab-case, 본문은 한국어.
+5. 모든 변경은 브랜치 + PR로 올리고, merge는 사람이 승인한다.
+
+### 레이어 담당과 코드 레포
+
+| 레이어 | 문서 | 코드 레포 (구조) | 담당 |
+| --- | --- | --- | --- |
+| 하드웨어 | `hardware/` | `hansung-capstone-team-6-clear/Hardware` (`setup/` → `parts/` → `app/`) | 김지훈, 김리윤 |
+| 백엔드 | `backend/` | `hansung-capstone-team-6-clear/desk-pet-backend` (`api/` → `services/` → `eureka.py`·`db.py`) | 이서현 |
+| AI | `ai/` | `desk-pet-backend`의 `services/ai.py` | 박시현 |
+| 공통 | `architecture.md`, `contracts.md` | — | 김리윤 주관, 전원 리뷰 |
+
+10/01 합의의 `hardware`·`backend`·`ai` 3개 저장소 중 AI는 별도 레포 대신 백엔드 모듈로 둔다. LLM 호출은 Backend
+프로세스 안에서 도는 함수 하나라서, 레포를 나누면 버전 맞추기만 늘어난다.
+
 ## Related Wiki
 
 - [[wiki/topics/eureka-desk-pet|AI Desk Pet (Capstone)]] — 토픽 허브
@@ -69,6 +124,10 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 - [[desk-pet-hardware|Desk Pet Hardware]]
 - [[desk-pet-interface-contracts|Desk Pet Interface Contracts]]
 - [[desk-pet-requirements-and-policies|Desk Pet Requirements & Policies]]
+- [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]] — `contracts.md` § 1·2의 기반
+- [[wiki/desk-pet-device-states|장치 상태]] — `contracts.md` § 5의 기반
+- [[wiki/desk-pet-hardware-mvp-decisions|MVP 결정 기록]] — 10/07 하드웨어 결정 16건
+- [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] — `contracts.md`가 닫은 항목은 contracts § 변경 이력 참고
 
 ## Log
 
@@ -81,9 +140,13 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 - 2026-09-29~30 — 4계층 구조도·레이어별 인터페이스, 대표 시나리오를 "마감 임박 선제 알림"으로 단일화, Mock Server 검증, Raspberry Pi 대여 완료.
 - 2026-10-01 — 중간 발표, 기업 미팅(범위 축소·GitHub 협업·인터페이스 JSON·Docker/Lambda·Knowledge 활용 피드백).
 - 2026-10-07 — 팀 회의, 03. AI 문서 필드명·책임 위치 리뷰 댓글.
+- 2026-10-08 — 멘토 기술 검토, 1차 최소 비용 조사, 1차 아키텍처·계약(`contracts.md`) 작성. 코드 레포 구조 셋업 PR:
+  `desk-pet-backend#1`(api → services → eureka·db), `Hardware#1`(setup → parts → app).
 
 ## Outputs
 
 - 원문(Notion export): `raw/Capstone Eureka Process*.md`, `raw/Eureka Process 연동형 업무관리 AI 데스크 펫 - 프로젝트 정리.md`,
   `raw/LLM Wiki - AI 데스크 펫 프로젝트.md`
 - 코드 첨부(`deskpet_mock_server.zip`, `Eureka_Process_API_Test.zip`)는 vault에 넣지 않았다 — 역할별 GitHub 저장소가 정본이다.
+- [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|2026-10-08 기술 검토]]
+- [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|2026-10-08 1차 최소 비용 조사]]
