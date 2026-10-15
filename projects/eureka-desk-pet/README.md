@@ -75,6 +75,7 @@ projects/eureka-desk-pet/
 │   └── README.md      ← 백엔드 레이어: desk-pet-backend 구조, Eureka 연동 체크리스트, 응답 시간 예산
 ├── ai/
 │   └── README.md      ← AI 레이어: 모델 선택, 프롬프트 입력, 평가셋, 로컬 LLM 비교 실험
+├── meetings/          ← 주간 기업(멘토) 미팅 회의록 — README가 회의 목록
 └── outputs/           ← 날짜가 붙는 조사·검토 결과 (스냅샷 — 고치지 않고 새 파일 추가)
 ```
 
@@ -90,7 +91,8 @@ projects/eureka-desk-pet/
 | 레이어 공통 구조·흐름 변경 | `architecture.md` |
 | 레이어 간 JSON, AI 출력 형식, DB 스키마 | `contracts.md` |
 | 레이어 내부 결정, 체크리스트, 실험 결과 | `<layer>/README.md` — 길어지면 같은 폴더에 `kebab-case.md` 추가 |
-| 날짜가 붙는 조사·검토·회의 결론 | `outputs/YYYY-MM-DD-<slug>.md` (`templates/query-output.md` 형식) |
+| 날짜가 붙는 조사·검토 결론 | `outputs/YYYY-MM-DD-<slug>.md` (`templates/query-output.md` 형식) |
+| 기업(멘토) 미팅 회의록 | `meetings/YYYY-MM-DD-<slug>-meeting-note.md` + `meetings/README.md` 목록 갱신 |
 | Notion 등 외부 문서 원문 | vault ingest → `raw/` 원문 + `wiki/desk-pet-*` 정리 |
 | 코드 실행법, 환경 변수 목록 | 각 코드 레포의 README |
 
@@ -144,6 +146,8 @@ projects/eureka-desk-pet/
   `desk-pet-backend#1`(api → services → eureka·db), `Hardware#1`(setup → parts → app).
 - 2026-10-15 — Pi 기본 세팅 완료(완료 기준 4개 통과, OS는 trixie), GPIO17 버튼 테스트 통과. 남은 하드웨어 일은 오디오 실물 테스트
   → [[projects/eureka-desk-pet/hardware/README|Hardware 레이어]].
+  같은 날 온라인 멘토 미팅(시험기간 약식) — 백엔드 1차 범위 3개 기능으로 축소, AI 평가셋 20개·Gemini 테스트,
+  다음 회의는 시험(10-23 종료) 후 대면 → [[projects/eureka-desk-pet/meetings/2026-10-15-mentor-meeting-note|10-15 회의록]].
 
 ## Outputs
 
@@ -152,3 +156,4 @@ projects/eureka-desk-pet/
 - 코드 첨부(`deskpet_mock_server.zip`, `Eureka_Process_API_Test.zip`)는 vault에 넣지 않았다 — 역할별 GitHub 저장소가 정본이다.
 - [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|2026-10-08 기술 검토]]
 - [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|2026-10-08 1차 최소 비용 조사]]
+- [[projects/eureka-desk-pet/meetings/README|회의록 목록]] — 최신: [[projects/eureka-desk-pet/meetings/2026-10-15-mentor-meeting-note|2026-10-15 멘토 미팅]]
