@@ -142,6 +142,8 @@ projects/eureka-desk-pet/
 - 2026-10-07 — 팀 회의, 03. AI 문서 필드명·책임 위치 리뷰 댓글.
 - 2026-10-08 — 멘토 기술 검토, 1차 최소 비용 조사, 1차 아키텍처·계약(`contracts.md`) 작성. 코드 레포 구조 셋업 PR:
   `desk-pet-backend#1`(api → services → eureka·db), `Hardware#1`(setup → parts → app).
+- 2026-10-15 — Pi 기본 세팅 완료(완료 기준 4개 통과, OS는 trixie), GPIO17 버튼 테스트 통과. 남은 하드웨어 일은 오디오 실물 테스트
+  → [[projects/eureka-desk-pet/hardware/README|Hardware 레이어]].
 
 ## Outputs
 
