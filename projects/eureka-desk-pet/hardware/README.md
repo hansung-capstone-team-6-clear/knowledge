@@ -24,14 +24,25 @@ Notion "05 Raspberry Pi" 핀맵 **표**를 기준으로 하고, 버튼을 추가
 | MAX98357A 앰프 | BCLK / LRCLK / DATA OUT | GPIO18 (12) / GPIO19 (35) / GPIO21 (40) — 마이크와 클럭 공유 | 5V (2), GND (6) |
 | ST7789 LCD | SCLK / MOSI / CS / DC / RST | GPIO11 (23) / GPIO10 (19) / GPIO8 (24) / GPIO24 (18) / GPIO25 (22) | 3.3V (17), GND (14) |
 | WS2812B LED 링 | DIN | GPIO12 (32) | 5V (4), GND (20) |
-| PTT 버튼 (제안) | 입력, 내부 풀업 | GPIO17 (11) | GND (아무 GND 핀) |
+| PTT 버튼 (3핀 모듈, 확인) | IN, active-low | GPIO17 (11) | 3.3V (1) — 5V 금지, GND (6) |
+
+## 진행 상황 (2026-10-15)
+
+- **Pi 기본 세팅 완료** — 완료 기준 4개 통과: SSH 접속, `arecord -l`/`aplay -l`에 I2S 카드, `/dev/spidev0.0`, `pip install -r requirements.txt`.
+- **OS**: Raspberry Pi OS trixie (Debian 13). 설계 문서의 bookworm과 다르다.
+- **config.txt** (`/boot/firmware/`): `dtparam=spi=on`, `dtparam=audio=off`, `dtoverlay=googlevoicehat-soundcard` 적용.
+- **I2S 사운드 카드**: card 2 (`sndrpigooglevoi`). 녹음·재생 테스트는 `plughw:2,0`을 쓴다.
+  카드 인식만 확인했고, 실제 마이크·앰프 동작은 부품 도착 후 확인한다.
+- **버튼 테스트 통과** (GPIO17): 3핀 모듈, active-low(평소 1, 누르면 0), 채터링 없음.
+  앱 코드는 `Button(17, pull_up=True)`를 그대로 쓸 수 있다.
+- **남은 일**: 오디오 실물 테스트 (아래 1번 완료 기준).
 
 ## 먼저 확인할 것 (10/18까지)
 
 1. **오디오가 1순위 리스크다.** 마이크와 앰프가 I2S 컨트롤러 하나를 공유하므로 녹음과 재생을 함께 여는 overlay가 하나 필요하다.
-   후보는 `dtoverlay=googlevoicehat-soundcard` (추정 — 검증 필요).
+   `dtoverlay=googlevoicehat-soundcard` 적용, 카드 인식 확인 (10/15). 실물 녹음·재생은 미확인.
    완료 기준: `arecord`로 5초 녹음 → `aplay`로 재생 성공.
-2. `config.txt`(Bookworm은 `/boot/firmware/`, 이전 OS는 `/boot/`)에 `dtparam=audio=off` — 온보드 오디오가 PWM을 써서 LED(PWM0)와 충돌할 수 있다.
+2. `config.txt`(Bookworm·trixie는 `/boot/firmware/`, 이전 OS는 `/boot/`)에 `dtparam=audio=off` (10/15 적용) — 온보드 오디오가 PWM을 써서 LED(PWM0)와 충돌할 수 있다.
 3. LED 밝기는 소프트웨어로 30% 이하로 둔다. 24개 최대 밝기는 약 1.4A(개당 약 60mA)이고 Pi 5V 핀을 앰프와 같이 쓴다.
    Pi의 3.3V 신호로 LED가 불안정하면 레벨 시프터를 단다.
 4. 하우징 실측: 디자인 시안은 약 85mm 큐브인데 Pi 4B 보드가 85.6 × 56.5mm이고, 24구 링은 보통 외경이 약 66mm다.
