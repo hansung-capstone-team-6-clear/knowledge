@@ -1,6 +1,6 @@
 # AI 레이어
 
-- 코드: `desk-pet-backend` 레포의 `services/ai.py` (AI 전용 레포는 만들지 않는다)
+- 코드: `desk-pet-backend` 레포의 `src/desk_pet_backend/services/ai.py` (AI 전용 레포는 만들지 않는다)
 - 계약: `../contracts.md` § 3 (AI 출력)
 - 구조: `../architecture.md`
 
@@ -10,7 +10,7 @@
 2. **멘토 제안**: 1차 모델은 **Gemini Flash-Lite 무료 등급**. 오디오를 직접 입력받으므로 STT 단계를 따로 두지 않고, 월 0원이다.
    팀 결정([[wiki/desk-pet-hardware-mvp-decisions|MVP 결정]] 16번)은 서버 Local LLM이라 **결정 필요** (`../contracts.md` § 3). 근거
    ([[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|최소 비용 조사]]).
-3. 호출은 함수 하나 `analyze(audio_or_text, context) -> Decision` 뒤에 둔다. 모델 교체는 설정값만 바꾼다.
+3. 호출은 `async analyze(*, audio, text, now, open_tasks, pending) -> schemas.Decision` 함수 하나로 처리한다. 모델은 `LLM_MODEL` 설정으로 선택한다.
 4. 사용자에게 들려줄 문장은 `tasks.py` 템플릿이 만든다. 응답 문장을 위해 LLM을 두 번 부르지 않는다.
 5. 경량 Intent 모델, MCP, 로컬 LLM은 1차에 없다 (이유: `../architecture.md` § 1차에서 뺀 것).
 
@@ -31,6 +31,8 @@ Gemini 무료 등급의 입력은 Google 제품 개선에 쓰일 수 있다 (공
 
 발화 20개. 먼저 `/api/text`로 평가하고, 같은 문장을 녹음해 `/api/voice`로 다시 평가한다.
 
+2026-10-28 현재 [AI PR #4](https://github.com/hansung-capstone-team-6-clear/desk-pet-backend/pull/4)가 `main`에 머지됐고, `analyze()`·`tests/eval/utterances.jsonl` 20건·`tests/eval/run_eval.py`가 준비됐다. **실제 20건 실행 결과와 지연 기록은 아직 확인되지 않아 아래 통과 기준 달성 여부는 미정**이다. 평가셋 `create-02`는 기준 시각보다 과거의 마감을 등록 정답으로 두어 백엔드의 과거 마감 거절 정책과 어긋난다. 실행 전 문항을 검토한다.
+
 | 분류 | 개수 | 예 |
 | --- | --- | --- |
 | 등록 | 5 | "내일 오후 3시까지 보고서 검토 추가해줘" / "9월 27일 오후 3시까지 보고서 검토해야 해. 마감 2시간 전에 알려줘" |
@@ -42,7 +44,7 @@ Gemini 무료 등급의 입력은 Google 제품 개선에 쓰일 수 있다 (공
 
 - 측정: `action` 정확도, `item_id` 정확도, `due_at` 정확도(분 단위), 재질문 판단, 지연(중앙값·최대)
 - 통과 기준: 20개 중 18개 이상 정답, 지연 중앙값 2초 이하
-- 보관: 발화셋은 `desk-pet-backend` 레포 `tests/eval/utterances.jsonl` (제안), 결과는 이 폴더에 `eval-YYYY-MM-DD.md`
+- 보관: 발화셋은 `desk-pet-backend` 레포 `tests/eval/utterances.jsonl`, 결과는 이 폴더에 `eval-YYYY-MM-DD.md`
 
 ## 전환 조건
 

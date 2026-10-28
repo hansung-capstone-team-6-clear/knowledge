@@ -16,7 +16,7 @@ milestones:
   - name: "4차 — 소음·오인식 테스트, 전시 데모, 최종 발표"
     due: 2026-12-31
     done: false
-next_action: "역할별 기술 스택·구조 다이어그램 확정, 인터페이스 JSON 필드명 통일, Mock Backend를 Eureka 실연동으로 전환"
+next_action: "main에 머지된 Backend PR #3과 AI PR #4를 함께 실행해 텍스트·음성 경로를 재검증하고, AI 20문항 정확도·지연 결과를 기록한다"
 ---
 
 # eureka-desk-pet
@@ -28,6 +28,8 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 
 2026-10-08 멘토 기술 검토: 구현 가능, 단 AI·백엔드 레이어 단순화 필요
 → [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]]. 구현 기준은 `architecture.md`와 `contracts.md`다.
+
+2026-10-28 진행 상황: Backend PR #3(Eureka 등록·목록 조회, `/api/text`·`/api/voice` 입구)과 AI PR #4(`analyze()` 구현)가 `main`에 머지됐다. 등록·조회·재질문 외의 업무 action, 선제 알림, Pi 실물 연동은 남아 있다. AI 평가셋 20개와 실행기는 준비됐으나 정확도·지연 실측 결과는 확인되지 않았다. 근거와 다음 순서는 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|10/28 개발 진행 현황]]에 정리했다.
 
 ## Purpose
 
@@ -144,6 +146,7 @@ projects/eureka-desk-pet/
   `desk-pet-backend#1`(api → services → eureka·db), `Hardware#1`(setup → parts → app).
 - 2026-10-15 — Pi 기본 세팅 완료(완료 기준 4개 통과, OS는 trixie), GPIO17 버튼 테스트 통과. 남은 하드웨어 일은 오디오 실물 테스트
   → [[projects/eureka-desk-pet/hardware/README|Hardware 레이어]].
+- 2026-10-28 — Backend PR #3과 AI PR #4가 `main`에 머지됨. 각 브랜치 구현 범위와 미검증 항목은 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|개발 진행 현황]]에 기록.
 
 ## Outputs
 
@@ -152,3 +155,4 @@ projects/eureka-desk-pet/
 - 코드 첨부(`deskpet_mock_server.zip`, `Eureka_Process_API_Test.zip`)는 vault에 넣지 않았다 — 역할별 GitHub 저장소가 정본이다.
 - [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|2026-10-08 기술 검토]]
 - [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|2026-10-08 1차 최소 비용 조사]]
+- [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|2026-10-28 개발 진행 현황]]
