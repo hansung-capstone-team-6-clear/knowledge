@@ -29,6 +29,8 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 2026-10-08 멘토 기술 검토: 구현 가능, 단 AI·백엔드 레이어 단순화 필요
 → [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]]. 구현 기준은 `architecture.md`와 `contracts.md`다.
 
+2026-10-28 진행 상황: Backend PR #3(Eureka 등록·목록 조회, `/api/text`·`/api/voice` 입구)과 AI PR #4(`analyze()` 구현)가 `main`에 머지됐다. 등록·조회·재질문 외의 업무 action, 선제 알림, Pi 실물 연동은 남아 있다. AI 평가셋 20개와 실행기는 준비됐으나 정확도·지연 실측 결과는 확인되지 않았다. 근거와 다음 순서는 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|10/28 개발 진행 현황]]에 정리했다.
+
 ## Purpose
 
 한성대학교 기업연계 AI 캡스톤 디자인 수업에서 클리어픽(6팀)이 협업 기업 레몬클라우드와 진행하는 프로젝트.
@@ -148,6 +150,7 @@ projects/eureka-desk-pet/
   → [[projects/eureka-desk-pet/hardware/README|Hardware 레이어]].
   같은 날 온라인 멘토 미팅(시험기간 약식) — 백엔드 1차 범위 3개 기능으로 축소, AI 평가셋 20개·Gemini 테스트,
   다음 회의는 시험(10-23 종료) 후 대면 → [[projects/eureka-desk-pet/meetings/2026-10-15-mentor-meeting-note|10-15 회의록]].
+- 2026-10-28 — Backend PR #3과 AI PR #4가 `main`에 머지됨. 각 브랜치 구현 범위와 미검증 항목은 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|개발 진행 현황]]에 기록.
 - 2026-10-29 — 온라인 멘토 미팅. 하드웨어는 녹음·전송·출력만, 처리는 모두 백엔드로 흐름 정리. 요청에서 `request_id` 제거(응답에만),
   WebSocket 선제 알림 1차 제외, 하드웨어 0·2번 김리윤 / 1번 김지훈, 백엔드 API·Eureka·출력 이서현 / 의도 분석·재질문 박시현
   → [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|10-29 회의록]].
@@ -159,4 +162,5 @@ projects/eureka-desk-pet/
 - 코드 첨부(`deskpet_mock_server.zip`, `Eureka_Process_API_Test.zip`)는 vault에 넣지 않았다 — 역할별 GitHub 저장소가 정본이다.
 - [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|2026-10-08 기술 검토]]
 - [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|2026-10-08 1차 최소 비용 조사]]
+- [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|2026-10-28 개발 진행 현황]]
 - [[projects/eureka-desk-pet/meetings/README|회의록 목록]] — 최신: [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|2026-10-29 멘토 미팅]]
