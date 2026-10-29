@@ -16,7 +16,7 @@ milestones:
   - name: "4차 — 소음·오인식 테스트, 전시 데모, 최종 발표"
     due: 2026-12-31
     done: false
-next_action: "역할별 기술 스택·구조 다이어그램 확정, 인터페이스 JSON 필드명 통일, Mock Backend를 Eureka 실연동으로 전환"
+next_action: "클라우드 /api/voice 먼저 공개, 하드웨어 0·1·2번 구현, 바뀐 요청·응답 형식을 contracts.md에 반영, 다음 주~다다음 주 하드웨어–백엔드 연동 테스트 (10-29 회의)"
 ---
 
 # eureka-desk-pet
@@ -148,6 +148,9 @@ projects/eureka-desk-pet/
   → [[projects/eureka-desk-pet/hardware/README|Hardware 레이어]].
   같은 날 온라인 멘토 미팅(시험기간 약식) — 백엔드 1차 범위 3개 기능으로 축소, AI 평가셋 20개·Gemini 테스트,
   다음 회의는 시험(10-23 종료) 후 대면 → [[projects/eureka-desk-pet/meetings/2026-10-15-mentor-meeting-note|10-15 회의록]].
+- 2026-10-29 — 온라인 멘토 미팅. 하드웨어는 녹음·전송·출력만, 처리는 모두 백엔드로 흐름 정리. 요청에서 `request_id` 제거(응답에만),
+  WebSocket 선제 알림 1차 제외, 하드웨어 0·2번 김리윤 / 1번 김지훈, 백엔드 API·Eureka·출력 이서현 / 의도 분석·재질문 박시현
+  → [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|10-29 회의록]].
 
 ## Outputs
 
@@ -156,4 +159,4 @@ projects/eureka-desk-pet/
 - 코드 첨부(`deskpet_mock_server.zip`, `Eureka_Process_API_Test.zip`)는 vault에 넣지 않았다 — 역할별 GitHub 저장소가 정본이다.
 - [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|2026-10-08 기술 검토]]
 - [[projects/eureka-desk-pet/outputs/2026-10-08-mvp-cost-research|2026-10-08 1차 최소 비용 조사]]
-- [[projects/eureka-desk-pet/meetings/README|회의록 목록]] — 최신: [[projects/eureka-desk-pet/meetings/2026-10-15-mentor-meeting-note|2026-10-15 멘토 미팅]]
+- [[projects/eureka-desk-pet/meetings/README|회의록 목록]] — 최신: [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|2026-10-29 멘토 미팅]]
