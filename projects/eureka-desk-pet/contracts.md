@@ -1,7 +1,7 @@
 # eureka-desk-pet 레이어 간 계약 (1차)
 
 > 레이어 간에 주고받는 형식의 **단일 진실원**. 바꾸려면 이 파일 PR을 먼저 올리고, merge 후 각 코드 레포에 반영한다.
-> 상태: **초안 (2026-10-08)** — 팀 검토 후 확정. 구조와 흐름은 `architecture.md`를 본다.
+> 상태: **초안 (2026-10-08)**, 2026-10-29 멘토 미팅 결정 반영 — 팀 검토 후 확정. 구조와 흐름은 `architecture.md`를 본다.
 >
 > 기반: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]과 [[wiki/desk-pet-device-states|장치 상태]]
 > (2026-10-07 하드웨어 결정, MVP Mock Server 형식 유지). 이 문서는 그 형식을 그대로 쓰고, Backend 내부(AI 출력·Eureka 매핑·DB)와
@@ -13,8 +13,10 @@
 2. 시각은 ISO-8601 + `+09:00` (예: `2026-10-09T15:00:00+09:00`). Eureka의 epoch ms 변환은 Backend `eureka.py`에서만 한다.
 3. 알림 시점은 "마감 N분 전"을 뜻하는 정수 `offset_minutes` 하나로 표현한다. `reminderAt`(절대 시각), `reminder_offset_minutes`,
    `alert_before_minutes` 같은 기존 이름은 쓰지 않는다.
-4. 기기는 `user_id`로 식별한다 (MVP는 사용자 1명당 펫 1대).
-5. 요청 추적용 `request_id`: 음성 요청은 Pi가 만든다 (`req_20261008_153000_a1b2`), 알림은 Backend가 만든다 (`alert_<item_id>_<due_at>`).
+4. 기기는 `user_id`로 식별한다 (MVP는 사용자 1명당 펫 1대). 1차는 로그인 없이 Eureka 계정 하나를 쓴다.
+   요청의 `user_id`는 선택값이고, Eureka API 키는 Backend `.env`에만 둔다 (§ 4).
+5. 요청 추적용 `request_id`는 **Backend가 만들어 응답에만** 넣는다. Pi는 보내지 않는다.
+   음성 요청은 `req_20261029_153000_a1b2`, 알림은 `alert_<item_id>_<due_at>` 형식이다.
 6. **추가 — 인증**: Pi → Backend 요청과 WS 연결에 헤더 `X-Device-Token`을 붙인다. 값은 양쪽 `.env`에만 두고 커밋하지 않는다.
 7. 1차는 같은 Wi-Fi 안에서 HTTP/WS를 쓴다. 외부 배포 시 HTTPS/WSS로 바꾼다 (`architecture.md` § 1차에서 뺀 것).
 
@@ -25,20 +27,19 @@
 | 필드 | 형식 |
 | --- | --- |
 | `audio` | WAV, 16kHz, mono, 16bit, 최대 15초 |
-| `user_id` | string |
-| `request_id` | string (Pi가 생성) |
+| `user_id` | string, **선택**. 생략하면 Backend는 기본 사용자 하나로 처리한다 |
 
 `POST /api/text` — `application/json`. **추가** — 개발·평가·비상 시연용. 응답은 `/api/voice`와 같다.
 
 ```json
-{ "user_id": "pet-01", "request_id": "req_20261008_153000_a1b2", "text": "내일 오후 3시까지 보고서 작성 추가해줘" }
+{ "user_id": "pet-01", "text": "내일 오후 3시까지 보고서 작성 추가해줘" }
 ```
 
-응답 (두 엔드포인트 공통, HTTP 200):
+응답 (두 엔드포인트 공통, HTTP 200). 모양은 `desk-pet-backend` `schemas.VoiceResponse` 그대로다:
 
 ```json
 {
-  "request_id": "req_20261008_153000_a1b2",
+  "request_id": "req_20261029_153000_a1b2",
   "status": "OK",
   "stt_text": "내일 오후 3시까지 보고서 작성 추가해줘",
   "type": "task_created",
@@ -63,12 +64,24 @@
 | `error` | `status`가 `OK`가 아닐 때 |
 
 - **시간**: Backend는 9초 안에 응답한다 (넘으면 `ERROR` 응답). Pi는 10초까지 기다린다. LLM 1회 구조의 예상 처리 시간은 4~5초다.
-- **재질문 연결**: Pi는 새 필드를 보내지 않는다. Backend가 `user_id`별로 원래 요청을 60초 동안 기억했다가(`pending`) 다음 요청에 이어 붙인다.
-  `conversationId`는 필요 없다.
+- **재질문 연결**: Pi는 새 필드를 보내지 않는다. Backend가 `user_id`별로(생략하면 기본 사용자로) 원래 요청을 60초 동안
+  기억했다가(`pending`) 다음 요청에 이어 붙인다. `conversationId`는 필요 없다.
+- **`output.lcd`**: LCD에 띄울 표정(`expression`)과 짧은 문구(`text`). `null`일 수 있다 — 그러면 Pi는 상태별 기본 표정을 쓴다 (§ 5).
+  10-29 회의 슬라이드 초안의 `output.expression`·`output.text`(평평한 모양)는 쓰지 않는다.
 - **`output.lcd.expression`**: `idle`, `listening`, `thinking`, `speaking`, `alert`, `surprised`, `happy`. 재질문 때는 `thinking`을 쓴다.
 - Backend가 `led` 필드를 보내지 않는다. LED 색은 Pi가 정한다 (§ 5).
+- **처리 결과는 `status` 문자열로 준다.** HTTP 오류 코드는 요청 자체가 잘못됐을 때만 쓰고, 이때 본문은 `{"detail": "<사유>"}`다.
 
-## 2. Backend ↔ Pi: WebSocket
+| HTTP | 언제 |
+| --- | --- |
+| 401 | `X-Device-Token`이 없거나 틀림 |
+| 413 | 파일이 1MB를 넘거나 음성이 15초를 넘음 |
+| 422 | 16kHz·모노·16bit PCM WAV가 아니거나 비어 있음, 필수 필드 누락 |
+
+## 2. Backend ↔ Pi: WebSocket — 1차 제외
+
+> **2026-10-29 결정: 선제 알림은 1차에서 뺀다.** 중요도가 낮아 하드웨어 작업 목록에서 WebSocket 항목을 모두 빼고,
+> Backend는 여유가 있을 때 구현한다. 아래 형식은 2차 기준으로 유지한다. Backend의 연결·`connected`·`PING`/`PONG`은 이미 동작한다.
 
 연결: `ws://<backend-host>:<port>/ws/hardware/{user_id}` + 헤더 `X-Device-Token`
 
@@ -176,7 +189,7 @@ Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 | `LISTENING` | 버튼 누름 | yellow / blink | listening |
 | `THINKING` | 버튼을 뗀 직후 (Pi가 직접) | white / blink | thinking |
 | `SPEAKING` | `/api/voice` 응답이 `status: OK` | blue / blink | 응답의 `output.lcd.expression` |
-| `ALERT` | `proactive_alert` 수신 | orange / fast_blink | alert |
+| `ALERT` | `proactive_alert` 수신 — **2차** (§ 2) | orange / fast_blink | alert |
 | `ERROR` | `status`가 `OK`가 아님, 응답 10초 초과, Wi-Fi·장치 오류 | red / blink | surprised |
 
 - LED 밝기 상한 30%. `THINKING`·`ALERT`·`ERROR` 색은 제안값이다 (디자인 확정 전).
@@ -217,3 +230,8 @@ CREATE TABLE pending (
   [[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 중 이 계약이 답을 정한 항목: 1(9초 상한), 2(재질문 연결 — `pending`),
   3(STT는 Backend), 4(`robotCommand` 없음), 5(`OK`), 6(`output.tts`는 Backend 템플릿), 7(WAV 고정), 8(`+09:00`), 10(재질문 표정 `thinking`).
   남은 항목: 9(LLM 방식).
+- 2026-10-29: [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|10-29 멘토 미팅]] 결정 반영.
+  `request_id`를 요청에서 빼고 Backend가 만들어 응답에만 넣는다(§ 0-5, § 1). `user_id`는 선택값, 로그인 없이 계정 하나(§ 0-4).
+  WebSocket 선제 알림은 1차 제외(§ 2, § 5 `ALERT`). 응답 모양은 슬라이드 초안 대신 현재 Backend `schemas.VoiceResponse`를 그대로 두고,
+  실제 코드의 HTTP 오류 코드(401·413·422)를 § 1에 적었다.
+  코드 반영 필요: Backend `api/voice.py`·`schemas.TextRequest`(`request_id` 생성, `user_id` 선택), Hardware `backend_client.send_voice()`(`request_id` 제거).
