@@ -15,8 +15,8 @@
    `alert_before_minutes` 같은 기존 이름은 쓰지 않는다.
 4. 기기는 `user_id`로 식별한다 (MVP는 사용자 1명당 펫 1대). 1차는 로그인 없이 Eureka 계정 하나를 쓴다.
    요청의 `user_id`는 선택값이고, Eureka API 키는 Backend `.env`에만 둔다 (§ 4).
-5. 요청 추적용 `request_id`는 **Backend가 만들어 응답에만** 넣는다. Pi는 보내지 않는다.
-   음성 요청은 `req_20261029_153000_a1b2`, 알림은 `alert_<item_id>_<due_at>` 형식이다.
+5. 요청 추적용 `request_id`는 **Pi가 만들어 보내고 Backend가 응답에 그대로 돌려준다.** Pi가 생략하면 Backend가 만든다.
+   Backend가 만드는 음성 요청 id는 `req_20261029_153000_a1b2`, 알림은 `alert_<item_id>_<due_at>` 형식이다.
 6. **추가 — 인증**: Pi → Backend 요청과 WS 연결에 헤더 `X-Device-Token`을 붙인다. 값은 양쪽 `.env`에만 두고 커밋하지 않는다.
 7. 1차는 같은 Wi-Fi 안에서 HTTP/WS를 쓴다. 외부 배포 시 HTTPS/WSS로 바꾼다 (`architecture.md` § 1차에서 뺀 것).
 
@@ -28,6 +28,7 @@
 | --- | --- |
 | `audio` | WAV, 16kHz, mono, 16bit, 최대 15초 |
 | `user_id` | string, **선택**. 생략하면 Backend는 기본 사용자 하나로 처리한다 |
+| `request_id` | string, **선택**. 보내면 응답에 그대로 돌려주고, 생략하면 Backend가 만든다 |
 
 `POST /api/text` — `application/json`. **추가** — 개발·평가·비상 시연용. 응답은 `/api/voice`와 같다.
 
@@ -235,3 +236,5 @@ CREATE TABLE pending (
   WebSocket 선제 알림은 1차 제외(§ 2, § 5 `ALERT`). 응답 모양은 슬라이드 초안 대신 현재 Backend `schemas.VoiceResponse`를 그대로 두고,
   실제 코드의 HTTP 오류 코드(401·413·422)를 § 1에 적었다.
   코드 반영 필요: Backend `api/voice.py`·`schemas.TextRequest`(`request_id` 생성, `user_id` 선택), Hardware `backend_client.send_voice()`(`request_id` 제거).
+- 2026-11-04: `request_id` 방식을 Pi 쪽에 맞춰 변경. Pi가 보낸 값을 응답에 그대로 돌려주고, 생략하면 Backend가 만든다(§ 0-5, § 1).
+  10-29 결정의 `request_id` 항목을 대체한다. Hardware `send_voice()`의 `request_id` 제거는 더 이상 필요 없다.
