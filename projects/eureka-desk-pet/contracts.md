@@ -64,7 +64,8 @@
 | `clarification` | 재질문. `output.tts`가 질문 문장 |
 | `error` | `status`가 `OK`가 아닐 때 |
 
-- **시간**: Backend는 9초 안에 응답한다 (넘으면 `ERROR` 응답). Pi는 10초까지 기다린다. LLM 1회 구조의 예상 처리 시간은 4~5초다.
+- **시간**. 계약 초안의 Backend 응답 상한은 9초이고 Pi는 업로드 시작부터 최대 10초를 기다린다. 현재 백엔드 코드는 업로드·입력 검증이 끝난 뒤 업무 처리에 7초 제한을 적용한다. 처리 제한을 넘으면 `ERROR`를 반환한다.
+- **현재 반환 범위**. `OK`와 `ERROR`를 반환한다. `NO_SPEECH`·`STT_ERROR`는 스키마에 정의되어 있고 반환 분기는 없다. `task_updated`·`reminder_set`도 현재 처리에서 생성하지 않는다.
 - **재질문 연결**: Pi는 새 필드를 보내지 않는다. Backend가 `user_id`별로(생략하면 기본 사용자로) 원래 요청을 60초 동안
   기억했다가(`pending`) 다음 요청에 이어 붙인다. `conversationId`는 필요 없다.
 - **`output.lcd`**: LCD에 띄울 표정(`expression`)과 짧은 문구(`text`). `null`일 수 있다 — 그러면 Pi는 상태별 기본 표정을 쓴다 (§ 5).
@@ -82,7 +83,7 @@
 ## 2. Backend ↔ Pi: WebSocket — 1차 제외
 
 > **2026-10-29 결정: 선제 알림은 1차에서 뺀다.** 중요도가 낮아 하드웨어 작업 목록에서 WebSocket 항목을 모두 빼고,
-> Backend는 여유가 있을 때 구현한다. 아래 형식은 2차 기준으로 유지한다. Backend의 연결·`connected`·`PING`/`PONG`은 이미 동작한다.
+> Backend는 여유가 있을 때 구현한다. 아래 형식은 2차 기준으로 유지한다. 코드에는 토큰 검사, 연결·`connected`·`PING`/`PONG`, 전송 함수가 있다. 폴러 연결, 알림 판단, 재전송은 미구현이다.
 
 연결: `ws://<backend-host>:<port>/ws/hardware/{user_id}` + 헤더 `X-Device-Token`
 
@@ -109,7 +110,7 @@
 
 - `PONG`이 오지 않거나 연결이 끊기면 Pi가 3초 간격으로 다시 연결한다.
 - 재연결되면 Backend가 미전달 알림의 업무 상태를 다시 확인하고, 남은 시간을 새로 계산해 보낸다.
-- 1차에서는 Backend의 `send` 성공을 전달 완료로 본다. Pi의 수신 확인(ack)은 2차.
+- 선제 알림의 초기 구현에서는 Backend의 `send` 성공을 전달 완료로 본다. Pi 수신 확인(ack)은 후속 과제다.
 - JSON 파싱에 실패한 메시지는 Pi가 버리고 로그만 남긴다.
 
 ## 3. Backend 내부: AI 출력
@@ -144,16 +145,20 @@ LLM 출력:
 | `set_reminder` | `item_id`, `offset_minutes` | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
 | `clarify` | `candidates`(선택, item_id 배열) + `question` 필수 | `clarification` | UNKNOWN, need_clarification |
 
+현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`clarify`다. `update_due`·`set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다.
+
 Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 
 1. `offset_minutes`가 없으면 60.
-2. `item_id`가 입력으로 준 미완료 목록에 없으면 실행하지 않고 `clarification`.
+2. `item_id`가 백엔드가 조회한 미완료 목록에 없으면 실행하지 않고 `clarification`.
 3. `due_at`이 과거면 `clarification`.
 4. 스키마 검증에 실패하면 `status: ERROR` ("다시 한 번 말씀해 주세요").
 5. Eureka가 2xx를 반환하고 응답 본문까지 확인한 뒤에만 성공 `type`을 돌려준다.
 6. `output.tts`는 항상 Backend 템플릿이 만든다 (LLM을 두 번 부르지 않는다). 재질문만 LLM의 `question`을 쓴다.
 
-**결정 필요 — LLM 방식** ([[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 9번): 팀 결정은 "서버에서 Local LLM"
+**현재 구현 — Gemini API**. `services/ai.py`가 모델 설정을 읽고 오디오 또는 텍스트와 맥락으로 구조화 JSON을 한 번 받는다.
+
+**이전 LLM 논의** ([[wiki/desk-pet-ai-hw-conflict-review|AI–HW 충돌 검토]] 9번): 팀 결정은 "서버에서 Local LLM"
 ([[wiki/desk-pet-hardware-mvp-decisions|MVP 결정]] 16번)이고, 멘토 제안은 "1차는 무료 등급 API, Local LLM은 비교 실험"이다
 (`ai/README.md`, [[projects/eureka-desk-pet/outputs/2026-10-08-tech-review|기술 검토]] § 로컬 LLM 비교). 위 입출력 형식은 어느 쪽이든 같다.
 
@@ -170,11 +175,11 @@ Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 
 | 동작 | Eureka 호출 |
 | --- | --- |
-| 등록 | `POST /_api_/items/0/start` — `{processId, name, dueAt, priority}` |
-| 목록 | `GET /_api_/items/0/list?sites&detail=true&limit=100` — 100개를 넘으면 다음 페이지 (페이지 파라미터는 `needs-update`) |
+| 등록 | `POST /_api_/items/0/start` — `{processId, name, dueAt, priority} (`priority=high`)` |
+| 목록 | `GET /_api_/items/0/list?sites&detail=true&limit=100` — 현재 원본 100건 이상이면 완료 필터 전에 오류. 페이지 처리 방식 확인 필요 |
 | 완료 | `POST /_api_/items/{id}/complete` |
-| 상태 | `GET /_api_/items/{id}/status` |
-| 마감 변경 | `PUT /_api_/items/{id}` — `{dueAt}` |
+| 상태 | `GET /_api_/items/{id}/status` (PoC, 실연동 클라이언트 미구현) |
+| 마감 변경 | `PUT /_api_/items/{id}` — `{dueAt}` (PoC, 실연동 클라이언트 미구현) |
 
 - 인증 헤더는 `x-api-key` (`EUREKA_API_KEY`). 아이디·비밀번호 방식이 아니다.
 - 입력 검증 오류가 500으로 올 수 있으므로 상태 코드와 응답 본문을 함께 확인한다 (PoC 결과).
@@ -221,7 +226,8 @@ CREATE TABLE pending (
 );
 ```
 
-- 중복 알림 방지는 `alerts`의 PRIMARY KEY가 맡는다. 키에 `due_at`이 있어 마감을 연기하면 알림이 다시 온다.
+- 현재 `pending`과 `reminders`를 사용한다. `alerts`는 테이블 정의 단계다.
+- 2차의 중복 알림 방지는 `alerts`의 PRIMARY KEY가 맡는다. 키에 `due_at`이 있어 마감을 연기하면 알림이 다시 온다.
 - 업무명·마감·상태는 저장하지 않는다. 원본은 Eureka다.
 
 ## 변경 이력
@@ -238,3 +244,5 @@ CREATE TABLE pending (
   코드 반영 필요: Backend `api/voice.py`·`schemas.TextRequest`(`request_id` 생성, `user_id` 선택), Hardware `backend_client.send_voice()`(`request_id` 제거).
 - 2026-11-04: `request_id` 방식을 Pi 쪽에 맞춰 변경. Pi가 보낸 값을 응답에 그대로 돌려주고, 생략하면 Backend가 만든다(§ 0-5, § 1).
   10-29 결정의 `request_id` 항목을 대체한다. Hardware `send_voice()`의 `request_id` 제거는 더 이상 필요 없다.
+
+- 2026-11-05: 백엔드 코드와 대조해 처리 시간, Gemini 호출, 실행 가능한 업무 동작, WebSocket 및 저장소 구현 범위를 기록했다.
