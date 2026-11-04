@@ -83,10 +83,12 @@ async def analyze(*, audio: bytes | None, text: str | None, now: datetime,
 | 상황 | `analyze()` 동작 | Backend 처리 |
 | --- | --- | --- |
 | Gemini 응답이 스키마와 다름 | `pydantic.ValidationError` | `tasks.handle()`이 잡아 `status: ERROR` |
-| Gemini 503(혼잡)·네트워크 오류 | `google.genai` 예외 | 같음 |
+| Gemini 503(혼잡) | 1회 재시도, 다시 실패하면 `google.genai` 예외 | 같음 |
+| 503 외 Gemini 오류·네트워크 오류 | `google.genai` 등 예외 (재시도 없음) | 같음 |
 | 9초 초과 | (호출 중단) | `asyncio.timeout(9)` → `ERROR` |
 
-`analyze()`는 예외를 잡지 않고 그대로 올린다. 재시도는 하지 않는다 (아래 미정 3).
+`analyze()`는 503일 때만 1회 재시도하고, 그 외 예외와 재시도 실패는 그대로 올린다. 재시도 시간도 `handle()`의 전체 제한 시간에 포함되며,
+재시도가 일어나면 경고 로그를 남긴다.
 
 ## 6. 시간 예산
 
@@ -99,10 +101,12 @@ async def analyze(*, audio: bytes | None, text: str | None, now: datetime,
 
 근거: [[projects/eureka-desk-pet/ai/eval-2026-11-03|11/03 AI 평가]], [[projects/eureka-desk-pet/outputs/2026-11-01-backend-aws-deploy|11/01 배포]].
 
-## 7. 미정 — 이서현과 정할 것
+## 7. 결정된 항목
 
-1. **새 업무 이름 검증**: AI가 가끔 업무 목록의 이름을 빌려 와 `create_task`를 낸다 (평가 § 4-1). `name`이 이번 발화·pending 발화에
-   없으면 재질문하는 코드 검사를 `tasks.py` 정책에 둘지 `ai.py` 후처리에 둘지.
-2. **`candidates` 사용**: AI는 후보 `item_id`를 주지만 Backend는 쓰지 않고 `question`만 읽는다. LCD에 후보 수를 보여 주는 등 쓸지.
-3. **503 재시도**: `analyze()` 안에서 1회 재시도할지 (지연 +2초 내외), 그대로 `ERROR`로 둘지.
-4. `update_due`·`set_reminder` 처리 흐름 연결 일정 (AI 판단은 평가셋 6문항 모두 통과).
+1. **새 업무 이름 검증**: AI가 가끔 업무 목록의 이름을 빌려 와 `create_task`를 낸다 (평가 § 4-1). 이서현이 규칙을 새로 정해 수정한다 (구현 전).
+2. **503 재시도**: 1회 재시도하고, 다시 실패하면 `ERROR`로 응답한다 (§ 5).
+
+## 8. 미정 — 이서현과 정할 것
+
+1. **`candidates` 사용**: AI는 후보 `item_id`를 주지만 Backend는 쓰지 않고 `question`만 읽는다. LCD에 후보 수를 보여 주는 등 쓸지.
+2. `update_due`·`set_reminder` 처리 흐름 연결 일정 (AI 판단은 평가셋 6문항 모두 통과).
