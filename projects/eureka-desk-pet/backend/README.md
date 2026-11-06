@@ -33,7 +33,7 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 
 - [Backend PR #3](https://github.com/hansung-capstone-team-6-clear/desk-pet-backend/pull/3)이 `main`에 머지됐다. 실제 Eureka 업무 등록·미완료 목록 조회와 `tasks.handle()`의 `create_task`, `list_tasks`, `clarify` 경로가 구현됐다. 실제 Eureka에 등록한 업무 ID가 후속 목록에 나타나는 수동 검증도 했다.
 - `POST /api/text`와 `POST /api/voice`가 `tasks.handle()`을 호출한다. 로컬 Swagger에서 정상 WAV 1건이 HTTP 200, 응답 본문 `status: OK`, `type: task_list`로 처리된 사례가 있다. 이는 Pi 마이크·TTS를 포함한 실물 전체 흐름 검증은 아니다.
-- `complete_task`, `update_due`, `set_reminder`는 AI 출력 계약에 있지만 `tasks.handle()`에서 아직 지원하지 않는다. Eureka의 완료·마감 변경 실제 호출도 별도로 검증해야 한다.
+- `complete_task`와 `update_due`도 `tasks.handle()`에서 실행한다. `set_reminder`는 AI 출력 계약에 있지만 아직 지원하지 않는다. `update_due`의 실제 Eureka 호출은 아직 검증하지 않았다.
 - WebSocket의 기본 연결·PING/PONG과 Docker 설정 파일은 존재한다. 선제 알림 폴링·미전달 알림 재전송, Docker 실행 및 Pi 연동 시연은 미검증이다.
 - AI PR #4도 `main`에 머지됐다. 두 PR이 합쳐진 최신 `main`의 텍스트·음성 경로는 별도 재검증이 필요하다. 세부 근거와 담당별 다음 작업은 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|10/28 개발 진행 현황]]을 본다.
 

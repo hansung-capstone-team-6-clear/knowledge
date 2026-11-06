@@ -145,7 +145,7 @@ LLM 출력:
 | `set_reminder` | `item_id`, `offset_minutes` | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
 | `clarify` | `candidates`(선택, item_id 배열) + `question` 필수 | `clarification` | UNKNOWN, need_clarification |
 
-현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`clarify`다. `update_due`·`set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다.
+현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`clarify`다. `set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다.
 
 Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 
@@ -179,7 +179,7 @@ Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 | 목록 | `GET /_api_/items/0/list?sites&detail=true&limit=100` — 현재 원본 100건 이상이면 완료 필터 전에 오류. 페이지 처리 방식 확인 필요 |
 | 완료 | `POST /_api_/items/{id}/complete` |
 | 상태 | `GET /_api_/items/{id}/status` (PoC, 실연동 클라이언트 미구현) |
-| 마감 변경 | `PUT /_api_/items/{id}` — `{dueAt}` (PoC, 실연동 클라이언트 미구현) |
+| 마감 변경 | `PUT /_api_/items/{id}` — `{dueAt}` — 클라이언트 구현, 실제 API 응답 검증 전 |
 
 - 인증 헤더는 `x-api-key` (`EUREKA_API_KEY`). 아이디·비밀번호 방식이 아니다.
 - 입력 검증 오류가 500으로 올 수 있으므로 상태 코드와 응답 본문을 함께 확인한다 (PoC 결과).
@@ -246,3 +246,4 @@ CREATE TABLE pending (
   10-29 결정의 `request_id` 항목을 대체한다. Hardware `send_voice()`의 `request_id` 제거는 더 이상 필요 없다.
 
 - 2026-11-05: 백엔드 코드와 대조해 처리 시간, Gemini 호출, 실행 가능한 업무 동작, WebSocket 및 저장소 구현 범위를 기록했다.
+- 2026-11-06: `update_due` 실행 구현 반영(§ 3, § 4). 형식 변경은 없다. 실제 Eureka PUT 응답은 아직 검증하지 않았다.
