@@ -58,9 +58,12 @@ async def analyze(*, audio: bytes | None, text: str | None, now: datetime,
 | `create_task` | `name`, `due_at`, `offset_minutes` | name·due_at이 모두 있을 때만 낸다. 날짜를 지어내지 않는다 | name·due_at 존재, 마감이 미래, offset > 0, 없으면 60 |
 | `list_tasks` | `range` | today·tomorrow·week·all 중 하나 | 범위로 거르기, 최대 5개 읽기 |
 | `complete_task` | `item_id` | open_tasks에 있는 id만 | id가 목록에 있는지 (없으면 재질문) |
-| `update_due` | `item_id`, `due_at` | 날짜만 바꾸면 원래 시각 유지 | **처리 흐름 미구현** ("아직 지원하지 않아요") |
-| `set_reminder` | `item_id`, `offset_minutes` | "2시간 전" → 120 | **처리 흐름 미구현** |
+| `update_due` | `item_id`, `due_at` | 날짜만 바꾸면 원래 시각 유지 | id가 목록에 있는지, 마감이 있고 미래인지 (아니면 재질문) |
+| `delete_task` | `item_id` | **프롬프트 반영 필요** (아래). 대상이 모호하면 clarify | id가 목록에 있는지, 확인 질문 후 "응"·"네"일 때만 삭제 |
+| `set_reminder` | `item_id`, `offset_minutes` | "2시간 전" → 120 | **처리 흐름 미구현** ("아직 지원하지 않아요") |
 | `clarify` | `candidates` + **지금까지 확정된 `name`·`due_at`·`offset_minutes`** | 질문 문장은 짧은 한국어 | `question`을 TTS로, Decision 전체를 pending으로 60초 저장 |
+
+`delete_task` 답변("응", "아니")은 Backend가 받아쓴 문장으로 판정하므로 AI는 `transcript`만 정확히 적으면 된다. `delete_item_id`는 `analyze()`에 넘기기 전에 뺀다.
 
 ## 4. 재질문(pending) 왕복
 
@@ -85,28 +88,34 @@ async def analyze(*, audio: bytes | None, text: str | None, now: datetime,
 | Gemini 응답이 스키마와 다름 | `pydantic.ValidationError` | `tasks.handle()`이 잡아 `status: ERROR` |
 | Gemini 503(혼잡) | 1회 재시도, 다시 실패하면 `google.genai` 예외 | 같음 |
 | 503 외 Gemini 오류·네트워크 오류 | `google.genai` 등 예외 (재시도 없음) | 같음 |
-| 9초 초과 | (호출 중단) | `asyncio.timeout(9)` → `ERROR` |
+| 7초 초과 | (호출 중단) | `asyncio.timeout(7)` → `ERROR` |
 
 `analyze()`는 503일 때만 1회 재시도하고, 그 외 예외와 재시도 실패는 그대로 올린다. 재시도 시간도 `handle()`의 전체 제한 시간에 포함되며,
 재시도가 일어나면 경고 로그를 남긴다.
+
+**2026-11-06 결정 (구현 전):** Gemini 처리 시간이 1~30초로 불규칙해 정상 호출도 `TimeoutError`로 끝나므로 시간 제한을 늘린다. Pi는 10초에 지연 안내, 20초에 실패 처리한다. LLM 재시도는 1회이고 대상 오류는 § 8에서 정한다. 재시도 시간은 계속 Backend 처리 제한에 포함한다 (`../contracts.md` § 1).
 
 ## 6. 시간 예산
 
 | 구간 | 측정값 |
 | --- | --- |
-| `analyze()` 텍스트 | 중앙값 1.3~1.5초 |
-| `analyze()` 음성 | 2~3.5초 |
-| `/api/voice` 전체 (EC2 시드니) | 6~8초 |
-| 제한 | 9초 (Pi는 10초 대기) |
+| `analyze()` 텍스트 | 중앙값 1.3~1.5초 (11/03), 1.7초 (11/06 서버) |
+| `analyze()` 음성 | 2~3.5초 (11/03), 중앙값 3.2초 (11/06 서버, 6건) |
+| 혼잡할 때 | 1~30초까지 불규칙 |
+| `/api/voice` 전체 (EC2 시드니) | 조회 4.3~8초, 등록 약 7.2초 추정 (11/06) |
+| 현재 제한 | 처리 7초 (Pi는 10초 대기) |
+| 결정된 제한 (구현 전) | Pi 10초 지연 안내, 20초 실패 |
 
-근거: [[projects/eureka-desk-pet/ai/eval-2026-11-03|11/03 AI 평가]], [[projects/eureka-desk-pet/outputs/2026-11-01-backend-aws-deploy|11/01 배포]].
+근거: [[projects/eureka-desk-pet/ai/eval-2026-11-03|11/03 AI 평가]], 2026-11-06 실제 서버 시험.
 
 ## 7. 결정된 항목
 
-1. **새 업무 이름 검증**: AI가 가끔 업무 목록의 이름을 빌려 와 `create_task`를 낸다 (평가 § 4-1). 이서현이 규칙을 새로 정해 수정한다 (구현 전).
+1. **새 업무 이름 검증**: AI가 가끔 업무 목록의 이름을 빌려 와 `create_task`를 낸다 (평가 § 4-1). `tasks.py`에서 검증한다 ([PR #15](https://github.com/hansung-capstone-team-6-clear/desk-pet-backend/pull/15) 리뷰 중). `pending`에 이름 검증용 `utterances`가 추가되지만 `analyze()`에 넘기기 전에 빼므로 입력은 그대로다.
 2. **503 재시도**: 1회 재시도하고, 다시 실패하면 `ERROR`로 응답한다 (§ 5).
+3. **맥락의 `open_tasks`**: 캐시 구현 후 Eureka 직접 조회 대신 캐시에서 온다. `analyze()` 입력 형식은 그대로다.
 
 ## 8. 미정 — 이서현과 정할 것
 
 1. **`candidates` 사용**: AI는 후보 `item_id`를 주지만 Backend는 쓰지 않고 `question`만 읽는다. LCD에 후보 수를 보여 주는 등 쓸지.
-2. `update_due`·`set_reminder` 처리 흐름 연결 일정 (AI 판단은 평가셋 6문항 모두 통과).
+2. `set_reminder` 처리 흐름 연결 여부 (AI 판단은 평가셋 문항 통과).
+3. **LLM 재시도 대상**: 지금은 503뿐이다. 호출 시간 초과와 깨진 JSON을 포함할지, 호출 1번의 제한 시간을 둘지.

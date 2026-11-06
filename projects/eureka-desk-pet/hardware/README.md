@@ -1,7 +1,7 @@
 # Hardware 레이어
 
 - 코드: `hansung-capstone-team-6-clear/Hardware`
-- 계약: `../contracts.md` § 1 (음성 요청), § 2 (선제 알림), § 5 (상태 매핑)
+- 계약: `../contracts.md` § 1 (음성 요청·시간 제한), § 2 (업무 목록·마감 알람), § 5 (상태 매핑)
 - 구조: `../architecture.md`
 
 ## 1차 범위
@@ -10,8 +10,22 @@
 | --- | --- |
 | Raspberry Pi 4B, PTT 버튼, I2S 마이크(ICS-43434), I2S 앰프(MAX98357A) + 스피커, ST7789 LCD, WS2812B LED 링 | 서보 모터(SG90), wake word, VAD, 오프라인 동작 |
 
-Pi 프로그램은 판단하지 않는다. 녹음·업로드, 응답 문장을 TTS로 재생, 상태 매핑표대로 LED/LCD 표시, WS 재연결만 맡는다.
+Pi 프로그램은 업무를 판단하지 않는다. 녹음·업로드, 응답 문장을 TTS로 재생, 상태 매핑표대로 LED/LCD 표시, 지연 안내, 마감 알람을 맡는다.
 LLM API 키는 Pi에 두지 않는다 (디바이스 토큰만).
+
+## 결정된 변경 (2026-11-06, 구현 전)
+
+하드웨어 팀이 동의했다. 형식은 `../contracts.md` § 1·2·5가 정본이다. WebSocket은 쓰지 않는다.
+
+| 변경 | Pi가 할 일 |
+| --- | --- |
+| 응답 대기 | 10초 → 20초. 20초를 넘으면 실패 처리 (`ERROR`) |
+| 지연 안내 | 10초가 지나도 응답이 없으면 "조금 더 기다려주세요". **LCD와 TTS 중 무엇을 쓸지는 PR 리뷰에서 정한다** |
+| 목록 동기화 | 부팅 때와 등록·수정·완료 응답을 받은 뒤 `GET /api/tasks` |
+| 마감 알람 | `마감 − offset_minutes ≤ 지금 < 마감`이면 알림 재생·LCD 표시 |
+| 보낸 기록 | (`item_id`, `due_at`, `offset_minutes`) 기준으로 파일에 저장, 재부팅 후 복구 |
+
+응답 대기 변경은 Backend 시간 제한 변경과 함께 배포한다. Pi가 10초에 끊은 뒤에도 Backend가 업무를 실행하는 일을 막기 위해서다.
 
 ## 핀맵 (1차안)
 
@@ -65,9 +79,9 @@ Hardware/
 ├── setup/      ① Pi 처음 준비: OS, 패키지, config.txt, 파이썬 환경
 ├── parts/      ② 부품 단독 테스트: audio(마이크+앰프+스피커) → button → led → lcd
 └── app/        ③ 통합 프로그램
-    ├── main.py            흐름: 버튼·알림 이벤트 → 상태 → 녹음·업로드·재생
+    ├── main.py            흐름: 버튼·알람 이벤트 → 상태 → 녹음·업로드·재생
     ├── states.py          상태 6개별 LED 색·LCD 표정 (contracts § 5)
-    ├── backend_client.py  POST /api/voice, WS /ws/hardware/{user_id} 수신 (30초 PING, 3초 재연결)
+    ├── backend_client.py  POST /api/voice, GET /api/tasks
     ├── tts.py             edge-tts(`ko-KR-SunHiNeural`) 합성·재생
     ├── devices/           button · audio · led · lcd
     └── assets/faces/      표정 PNG (240×280)

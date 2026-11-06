@@ -10,20 +10,20 @@ milestones:
   - name: "2차 — STT·TTS 및 Eureka Process API 연동 프로토타입"
     due: 2026-10-31
     done: false
-  - name: "3차 — Raspberry Pi·버튼·LED 통합 및 선제 알림 구현"
+  - name: "3차 — Raspberry Pi·버튼·LED 통합 및 마감 임박 알람 구현"
     due: 2026-11-30
     done: false
   - name: "4차 — 소음·오인식 테스트, 전시 데모, 최종 발표"
     due: 2026-12-31
     done: false
-next_action: "클라우드 /api/voice 먼저 공개, 하드웨어 0·1·2번 구현, 바뀐 요청·응답 형식을 contracts.md에 반영, 다음 주~다다음 주 하드웨어–백엔드 연동 테스트 (10-29 회의)"
+next_action: "시간 제한(Pi 20초)·업무 목록 캐시·GET /api/tasks 구현, Pi 지연 안내·자체 알람 구현, 하드웨어–백엔드 연동 테스트, 12월 초 마감 날짜 확정 (11-06 결정)"
 ---
 
 # eureka-desk-pet
 
 ## Status
 
-Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 개발을 시작했다. 9월 산출물(시나리오·요구사항·정책·
+Active — 3차 통합 단계. 일정이 12월 초로 당겨졌다 (날짜 확정 필요). 10/01 기업 미팅부터 본격 개발을 시작했다. 9월 산출물(시나리오·요구사항·정책·
 4계층 구조·인터페이스 초안)과 Eureka API PoC, Mock Server 검증이 끝났다.
 
 2026-10-08 멘토 기술 검토: 구현 가능, 단 AI·백엔드 레이어 단순화 필요
@@ -32,6 +32,8 @@ Active — 2차(10월) 프로토타입 단계. 10/01 기업 미팅부터 본격 
 2026-10-28 진행 상황: Backend PR #3(Eureka 등록·목록 조회, `/api/text`·`/api/voice` 입구)과 AI PR #4(`analyze()` 구현)가 `main`에 머지됐다. 등록·조회·재질문 외의 업무 action, 선제 알림, Pi 실물 연동은 남아 있다. AI 평가셋 20개와 실행기는 준비됐으나 정확도·지연 실측 결과는 확인되지 않았다. 근거와 다음 순서는 [[projects/eureka-desk-pet/outputs/2026-10-28-development-progress|10/28 개발 진행 현황]]에 정리했다.
 
 2026-11-01 배포: 10-29 결정대로 요청에서 `request_id`를 빼고 `user_id`를 선택값으로 바꾼 PR #6이 머지됐고, 이 `main`이 캡스톤 AWS 계정의 EC2(시드니)에서 실제 Gemini·Eureka와 연결돼 동작한다. 서울 리전은 계정 제한으로 막혀 있고, 응답 시간은 6~8초다 → [[projects/eureka-desk-pet/outputs/2026-11-01-backend-aws-deploy|11/01 요청 형식 변경과 AWS 배포]].
+
+2026-11-06 결정 (구현 전): ① 마감 임박 알림은 폴링·WebSocket 대신 Pi 자체 알람으로 구현한다 (`GET /api/tasks`, 하드웨어 팀 동의). ② 시간 제한을 Pi 10초 지연 안내·20초 실패로 바꾸고 LLM 재시도는 1회로 한다. ③ 요청마다 Eureka를 읽지 않고 하루 1회 조회한 목록을 캐시한다. 남은 리뷰는 지연 안내 방식(하드웨어 팀)과 Eureka 웹 변경의 최대 하루 반영 지연(전체)이다. 구현 기준은 `contracts.md` § 1·2·4다.
 
 ## Purpose
 
@@ -157,6 +159,7 @@ projects/eureka-desk-pet/
   WebSocket 선제 알림 1차 제외, 하드웨어 0·2번 김리윤 / 1번 김지훈, 백엔드 API·Eureka·출력 이서현 / 의도 분석·재질문 박시현
   → [[projects/eureka-desk-pet/meetings/2026-10-29-mentor-meeting-note|10-29 회의록]].
 - 2026-11-01 — Backend PR #6(요청 형식 변경) 머지, EC2(시드니)에 `/api/voice` 배포(10-29 A4) → [[projects/eureka-desk-pet/outputs/2026-11-01-backend-aws-deploy|AWS 배포]].
+- 2026-11-06 — Backend PR #14(마감 변경) 머지, 실제 서버에서 등록·조회·수정·완료·재질문 시험. 시간 제한, Pi 자체 알람, 업무 목록 캐시 방향 결정. 10-29의 "선제 알림 1차 제외"를 대체한다.
 
 ## Outputs
 
