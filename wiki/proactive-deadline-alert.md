@@ -14,10 +14,13 @@ related:
   - "[[wiki/eureka-process-api|Eureka Process API]]"
   - "[[wiki/desk-pet-interface-contracts|Desk Pet Interface Contracts]]"
 created: "2026-10-08"
-updated: "2026-10-08"
+updated: "2026-11-06"
 ---
 
 # Proactive Deadline Alert
+
+> **2026-11-06 변경 (구현 전):** 아래 Polling·WebSocket Push 설계 대신 Pi가 `GET /api/tasks`로 받은 목록을 기준으로 스스로 알람을 울리기로 했다.
+> 현재 기준은 [[projects/eureka-desk-pet/contracts|레이어 간 계약]] § 2다. 이 문서의 나머지는 이전 설계 기록이다.
 
 ## Summary
 
