@@ -27,8 +27,8 @@ FastAPI: 입력 검증 → tasks.py: 맥락 조회 → Decision 검증·실행 �
                         └─ ai.py: Gemini 오디오/텍스트 1회 → Decision
 
 개발·평가: POST /api/text · 상태 확인: GET /health
-마감 임박 (결정, 구현 전): Pi가 GET /api/tasks로 목록 수신 → 시간이 되면 Pi가 스스로 알림
-목록 조회 (결정, 구현 전): 서버 시작 시·하루 1회 Eureka 조회 → 로컬 캐시, 쓰기 시 캐시 수정 후 약 10초 뒤 재조회
+마감 임박: Pi가 GET /api/tasks로 목록 수신 → 시간이 되면 Pi가 스스로 알림 (Pi 쪽 구현 전)
+목록 조회: 서버 시작 시·하루 1회 Eureka 조회 → 로컬 캐시, 쓰기 시 캐시 수정 후 약 10초 뒤 재조회
 ```
 
 ## 레이어 책임
@@ -39,6 +39,7 @@ FastAPI: 입력 검증 → tasks.py: 맥락 조회 → Decision 검증·실행 �
 | Backend `api/` | 엔드포인트, 디바이스 토큰 확인 | 비즈니스 규칙 |
 | Backend `services/ai.py` | LLM 1회 호출, 출력 JSON 스키마 검증 | 업무 실행 |
 | Backend `services/tasks.py` | action 실행, 기본 알림 60분, item_id 검증, Eureka 성공 확인 후 응답 | HTTP 세부 |
+| Backend `services/task_cache.py` | Eureka 미완료 목록 캐시, 쓰기 뒤 캐시 수정·재조회 | 업무 판단 |
 | Backend `eureka.py` | 요청·응답 필드 매핑, epoch ms 변환, 목록 100건 제한과 오류 본문 확인 | 정책 |
 | Backend `db.py` | 알림 간격·재질문 대기 저장 | 업무 원본 (Eureka가 원본) |
 
@@ -56,14 +57,14 @@ LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.
 1. 버튼을 누르면 Pi가 즉시 LISTENING으로 바꾸고 녹음한다. 버튼→LED 100ms 요구는 Pi 안에서 충족한다.
 2. 버튼을 떼면 THINKING 표정으로 바꾸고 `POST /api/voice`로 WAV를 올린다.
 3. Backend가 Eureka 미완료 목록과 `pending`(재질문 대기)을 조회한 뒤, `ai.py`가 오디오와 맥락을 LLM에
-   **1회** 전달해 `{transcript, action, args}`를 받는다. 목록은 캐시 구현 후 캐시에서 읽는다 (`contracts.md` § 4).
+   **1회** 전달해 `{transcript, action, args}`를 받는다. 목록은 캐시에서 읽는다 (`contracts.md` § 4).
    LLM 호출은 실패 시 1회 재시도한다.
 4. `tasks.py`가 검증·실행하고 결과를 템플릿 문장으로 만든다. 응답 문장을 위해 LLM을 두 번 부르지 않는다.
 5. 응답 `{status, type, output}`을 받은 Pi가 `output.tts`를 Edge-TTS로 합성·재생하고 IDLE로 돌아간다.
 6. 응답이 늦으면 Pi가 10초에 지연 안내를 내고 20초에 실패 처리한다 (`contracts.md` § 1, 구현 전).
    이전 정책은 Pi 10초·Backend 7초였는데, Gemini 처리 시간이 1~30초로 불규칙해 정상 호출도 `TimeoutError`로 끝나서 바꿨다.
 
-### 마감 임박 알림 (2026-11-06 결정, 구현 전)
+### 마감 임박 알림 (2026-11-06 결정. Backend 목록 API는 2026-11-11 배포, Pi 구현 전)
 
 폴링과 WebSocket 대신 Pi가 스스로 울린다. 마감 시각을 알고 있으면 알림 시각에 서버 연결이 필요 없기 때문이다. 하드웨어 팀이 동의했다.
 
@@ -72,7 +73,7 @@ LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.
 3. Pi가 문장을 만들어 재생하고 LCD에 표시한 뒤 기록을 저장한다 ("보고서 검토 마감이 1시간 남았어요.").
 4. 재부팅하면 저장한 목록과 기록으로 복구한다.
 
-### 업무 목록 캐시 (2026-11-06 결정, 구현 전)
+### 업무 목록 캐시 (2026-11-06 결정, 2026-11-11 배포)
 
 요청마다 Eureka를 읽지 않고 서버 시작 시와 하루 1회 받아 둔 목록을 쓴다. 쓰기 성공 시 캐시를 바로 고치고 약 10초 뒤 다시 받는다.
 규칙은 `contracts.md` § 4가 정본이다. Eureka 웹에서 바꾼 내용은 최대 하루 늦게 반영되며, 이 점은 팀 전체 리뷰 항목이다.
