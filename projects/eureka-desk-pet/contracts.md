@@ -155,7 +155,7 @@ LLM 출력:
 | `set_reminder` | `item_id`, `offset_minutes` | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
 | `clarify` | `candidates`(선택, item_id 배열) + `question` 필수 | `clarification` | UNKNOWN, need_clarification |
 
-현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`delete_task`·`clarify`다. `set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다. `delete_task`는 프롬프트 반영 전이라 AI가 아직 내보내지 않는다.
+현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`delete_task`·`clarify`다. `set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다. `delete_task`는 desk-pet-backend `feat/ai-delete-and-json-retry` 브랜치에서 프롬프트에 반영했으며, 병합 전까지는 AI가 내보내지 않는다.
 
 **삭제 확인**: `delete_task`는 바로 실행하지 않는다. Backend가 업무 이름과 마감을 말하며 되묻고 `pending`에 대상 `item_id`를 60초 보관한다. 다음 발화가 "응"·"네" 같은 긍정 답이면 삭제하고, "아니" 같은 부정 답이면 취소한다. 다른 말이면 대기를 지우고 새 요청으로 처리한다. 답 판정은 LLM이 아니라 Backend가 받아쓴 문장으로 한다.
 
