@@ -151,13 +151,24 @@ LLM 출력:
 | `list_tasks` | `range`: `today` · `tomorrow` · `week` · `all` | `task_list` | GET_TASKS, GET_TASK_STATUS |
 | `complete_task` | `item_id` | `task_completed` | COMPLETE_TASK |
 | `update_due` | `item_id`, `due_at` | `task_updated` | UPDATE_TASK |
-| `delete_task` | `item_id` | 확인 질문 `clarification` → `task_deleted` | — (2026-11-06 추가, FR-24 변경) |
+| `delete_task` | `item_id`, `confirm`(확인 질문에 답할 때만: `yes` · `no` · `null`) | 확인 질문 `clarification` → `task_deleted` · `task_delete_cancelled` | — (2026-11-06 추가, FR-24 변경) |
 | `set_reminder` | `item_id`, `offset_minutes` | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
 | `clarify` | `candidates`(선택, item_id 배열) + `question` 필수 | `clarification` | UNKNOWN, need_clarification |
 
-현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`delete_task`·`clarify`다. `set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다. `delete_task`는 desk-pet-backend `feat/ai-delete-and-json-retry` 브랜치에서 프롬프트에 반영했으며, 병합 전까지는 AI가 내보내지 않는다.
+현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`delete_task`·`set_reminder`·`clarify`다 (`set_reminder`는 desk-pet-backend PR #40).
 
-**삭제 확인**: `delete_task`는 바로 실행하지 않는다. Backend가 업무 이름과 마감을 말하며 되묻고 `pending`에 대상 `item_id`를 60초 보관한다. 다음 발화가 "응"·"네" 같은 긍정 답이면 삭제하고, "아니" 같은 부정 답이면 취소한다. 다른 말이면 대기를 지우고 새 요청으로 처리한다. 답 판정은 LLM이 아니라 Backend가 받아쓴 문장으로 한다.
+**삭제 확인**: `delete_task`는 바로 실행하지 않는다. Backend가 업무 이름과 마감을 말하며 되묻고 `pending`에 대상 `item_id`(`delete_item_id`)를 60초 보관한다.
+다음 발화의 동의 여부는 **AI가 `args.confirm`으로 판단**하고, Backend는 그 판단을 검증한 뒤 실행한다 (desk-pet-backend PR #39 Backend, PR #42 AI 프롬프트).
+
+| AI 판단 | 조건 | Backend 처리 |
+| --- | --- | --- |
+| `delete_task`, `confirm: "yes"` | `item_id`가 `delete_item_id`와 같음 | 삭제 → `task_deleted` |
+| `delete_task`, `confirm: "no"` | `item_id`가 `delete_item_id`와 같음 | 취소 → `task_delete_cancelled` |
+| `delete_task`, `confirm: null` | 동의인지 알 수 없음 | 같은 업무로 다시 확인 질문 |
+| 다른 action | 확인 질문과 상관없는 새 요청 | 새 요청으로 처리 |
+
+AI가 동의로 판단해도 `item_id`가 확인 질문의 대상과 다르면 삭제하지 않는다. 확실한 거절이 아니면 AI는 `no` 대신 `null`을 낸다.
+(이전 방식: Backend가 받아쓴 문장을 정해진 단어 목록 `DELETE_YES`·`DELETE_NO`와 비교했다. 표현이 조금만 달라도 맞지 않아 PR #39에서 바꿨다.)
 
 Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 
@@ -264,3 +275,4 @@ CREATE TABLE pending (
 - 2026-11-06: `update_due` 실행 구현 반영(§ 3, § 4). 형식 변경은 없다. 같은 날 실제 Eureka에서 저장을 확인했다.
 - 2026-11-06: 팀 결정 반영 (구현 전). Pi 지연 안내 10초·실패 20초, Backend 처리 제한 조정, LLM 재시도 1회(§ 1). WebSocket 알림 대신 `GET /api/tasks` + Pi 자체 알람(§ 2, § 5, 하드웨어 팀 동의). 목록 캐시(§ 4). `alerts` 테이블 제외(§ 6). 남은 리뷰: 지연 안내 방식(하드웨어 팀), Eureka 웹 변경의 반영 지연(전체).
 - 2026-11-06: 음성 삭제 추가 — `delete_task`, `task_deleted`, `task_delete_cancelled`, 확인 질문 필수(§ 1, § 3, § 4). 기획서 FR-24 "삭제 제외"를 바꾸는 결정이다.
+- 2026-11-18: 삭제 확인 답 판정을 Backend 단어 목록에서 AI `args.confirm`(`yes`·`no`·`null`)으로 변경, Backend는 `item_id`가 확인 대상과 같은지 검증(§ 3, desk-pet-backend PR #39·#42). `set_reminder` 실행 구현 반영(PR #40).

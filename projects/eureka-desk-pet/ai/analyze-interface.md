@@ -59,12 +59,21 @@ async def analyze(*, audio: bytes | None, text: str | None, now: datetime,
 | `list_tasks` | `range` | today·tomorrow·week·all 중 하나 | 범위로 거르기, 최대 5개 읽기 |
 | `complete_task` | `item_id` | open_tasks에 있는 id만 | id가 목록에 있는지 (없으면 재질문) |
 | `update_due` | `item_id`, `due_at` | 날짜만 바꾸면 원래 시각 유지 | id가 목록에 있는지, 마감이 있고 미래인지 (아니면 재질문) |
-| `delete_task` | `item_id` | 지우기·취소 요청일 때만 낸다("완료했어"는 complete_task). 대상이 모호하면 clarify | id가 목록에 있는지, 확인 질문 후 "응"·"네"일 때만 삭제 |
-| `set_reminder` | `item_id`, `offset_minutes` | "2시간 전" → 120 | **처리 흐름 미구현** ("아직 지원하지 않아요") |
+| `delete_task` | `item_id`, `confirm`(확인 질문에 답할 때만) | 지우기·취소 요청일 때만 낸다("완료했어"는 complete_task). 대상이 모호하면 clarify. 확인 답은 `yes`·`no`·`null` | id가 목록에 있는지, 확인 답은 `confirm`이 `yes`이고 `item_id`가 확인 대상과 같을 때만 삭제 |
+| `set_reminder` | `item_id`, `offset_minutes` | "2시간 전" → 120 | id가 목록에 있는지, offset > 0 (PR #40) |
 | `clarify` | `candidates` + **지금까지 확정된 `name`·`due_at`·`offset_minutes`** | 질문 문장은 짧은 한국어 | `question`을 TTS로, Decision 전체를 pending으로 60초 저장 |
 
-`delete_task` 답변("응", "아니")은 Backend가 받아쓴 문장으로 판정하므로 AI는 `transcript`만 정확히 적으면 된다. `delete_item_id`는 `analyze()`에 넘기기 전에 뺀다.
-그래서 프롬프트는 `transcript`에 **이번 발화만** 적도록 예시와 함께 강조한다. 앞 문장이 섞이면 "응"이 긍정 답으로 판정되지 않아 삭제가 취소된다.
+**삭제 확인 답**은 AI가 판단한다 (desk-pet-backend PR #39·#42). `pending.action`이 `delete_task`이면 사용자가 확인 질문에 답하는 중이다.
+
+| 답 | AI 출력 |
+| --- | --- |
+| 동의 ("응", "알겠어요", "지워줘") | `delete_task`, `item_id`는 pending과 같게, `confirm: "yes"` |
+| 거절 ("아니", "그냥 둬") | `delete_task`, `item_id`는 pending과 같게, `confirm: "no"` |
+| 알 수 없음 ("잠깐만", "음") | `delete_task`, `item_id`는 pending과 같게, `confirm: null` (확실한 거절이 아니면 `no`를 내지 않는다) |
+| 새 요청 ("과제 제출 완료했어") | 새 action, `confirm` 없음 |
+
+처음 삭제를 요청할 때는 `confirm`을 넣지 않는다. `delete_item_id`는 `analyze()`에 넘기기 전에 빼고, Backend가 AI의 `item_id`와 비교한다.
+11/18 평가셋(39문항, 삭제 확인 답 5문항 포함)은 39/39를 통과했다.
 
 ## 4. 재질문(pending) 왕복
 
