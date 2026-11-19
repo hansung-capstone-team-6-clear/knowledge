@@ -13,8 +13,8 @@ src/desk_pet_backend/
 ├── main.py      앱 진입점, /health
 ├── config.py    환경 변수
 ├── schemas.py   contracts.md를 코드로 옮긴 Pydantic 모델
-├── api/         ① 입구: /api/voice, /api/text (Controller 역할). 구현 예정: GET /api/tasks
-├── services/    ② 규칙·흐름: tasks.py, ai.py. 구현 예정: 업무 목록 캐시
+├── api/         ① 입구: /api/voice, /api/text, GET /api/tasks (Controller 역할)
+├── services/    ② 규칙·흐름: tasks.py, task_cache.py(업무 목록 캐시), ai.py
 ├── eureka.py    ③ 바깥 연결: EurekaClient(real) + EurekaMock(mock)
 └── db.py        ③ 바깥 연결: SQLite (reminders · pending)
 tests/           자동 테스트, eval/ 평가셋, integration/ PoC 스크립트
@@ -30,17 +30,21 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 셋업 PR에서 함께 정리한 것: 빈 헥사고날 폴더 삭제, `.env.example`을 `EUREKA_API_KEY`(x-api-key) 기준으로 변경,
 `pyproject.toml` BOM 제거(설치 실패 원인), MCP·OpenAI·APScheduler 의존성 제거, `mocks/`·`docs/`를 참고용으로 표시.
 
-## 결정된 변경 (2026-11-06, 구현 전)
+## 남은 결정 (2026-11-06, 구현 전)
 
-형식과 규칙은 `../contracts.md` § 1·2·4·6이 정본이다.
+형식과 규칙은 `../contracts.md` § 1·6이 정본이다. 같은 날 결정한 업무 목록 캐시와 `GET /api/tasks`는 구현됐다 (아래 2026-11-11 현황).
 
 | 변경 | 내용 |
 | --- | --- |
 | 시간 제한 | 처리 전체 7초 → Pi 20초 안에 응답이 도착하도록 조정. 제안값은 쓰기 전까지 15초 + 쓰기 3초. **Pi 변경과 함께 배포한다** |
 | 쓰기 도중 시간 초과 (제안) | 처리됐는데 실패로 답하지 않게 "처리 여부를 확인하지 못했어요"로 답하고 `pending`을 지운다 |
-| 업무 목록 캐시 | 서버 시작 시·하루 1회 조회, 쓰기 성공 시 캐시 수정 후 약 10초 뒤 재조회, 쓰기 실패 시 즉시 조회, 조회 실패 시 기존 캐시 유지 |
-| `GET /api/tasks` | 미완료 업무의 이름·마감·알림 간격을 Pi에 전달 |
-| 코드 삭제 | `reminder.py`, `ws.py`의 알림 전송, `alerts` 테이블 |
+| 코드 삭제 | `reminder.py`, `ws.py`의 알림 전송, `alerts` 테이블, `POLL_INTERVAL_SECONDS` |
+
+## 구현 현황 (2026-11-11)
+
+- `GET /api/tasks`와 업무 목록 캐시를 구현해 서버에 배포했다 (PR #36, #37). 실제 Eureka로 등록·마감 변경·완료 직후 목록에 반영되는 것과, 완료한 업무가 약 10초 뒤 재조회 뒤에도 빠져 있는 것을 확인했다.
+- 텍스트 요청 5건에서 목록 조회 시간은 0ms였다 (11/06에는 약 1.3초). 완료 1건은 Gemini가 6.4초 걸려 처리 시간이 7.0초였다. 7초 제한 조정이 여전히 필요하다.
+- 음성 삭제(확인 질문 포함)는 Backend 처리만 있다 (PR #34). AI 프롬프트가 `delete_task`를 내보내야 동작한다.
 
 ## 구현 현황 (2026-11-06)
 
@@ -73,7 +77,7 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 | Gemini | 1.7초 | 3.2초 |
 | Eureka 쓰기 | 등록 1.1초, 수정·완료 0.5~0.6초 | 등록 1.1초, 수정·완료 0.5~0.6초 |
 
-쓰기는 로그의 전체 시간에서 읽기와 Gemini를 뺀 값이다. 합하면 음성 등록이 약 7.2초다. 캐시를 적용하면 읽기 시간이 빠진다.
+쓰기는 로그의 전체 시간에서 읽기와 Gemini를 뺀 값이다. 합하면 음성 등록이 약 7.2초다. 2026-11-11 캐시 배포 뒤 목록 읽기는 0초가 됐다.
 
 버튼을 떼는 즉시 Pi가 THINKING 표정을 띄워 체감 지연을 줄인다. 시간 제한은 `../contracts.md` § 1을 본다.
 
