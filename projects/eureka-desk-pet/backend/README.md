@@ -22,7 +22,7 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 ```
 
 - 호출 방향은 `api/ → services/ → eureka.py, db.py` 한쪽뿐이다.
-- `api/ws.py`, `services/reminder.py`, `alerts` 테이블은 이전 알림 설계의 코드다. 2026-11-06 결정으로 쓰지 않으며 구현 때 삭제한다.
+- 이전 알림 설계의 코드(`services/reminder.py`, `api/ws.py`의 알림 전송, `alerts` 테이블)는 삭제했다 (PR #41). `api/ws.py`는 Hardware 앱이 아직 연결하므로 `connected`·`PING`/`PONG`만 남겼고, Pi가 연결을 끊으면 지운다.
 - MVC를 그대로 쓰지 않는 이유: 화면(View)이 없는 API 서버다. 응답 JSON 모양(`schemas.py`)이 View에 가장 가깝다.
 - 기능별 폴더 대신 역할별 폴더를 쓰는 이유: 기능이 많지 않다. 5개 이상이 되면 기능별 폴더를 검토한다.
 - 헥사고날 Port는 쓰지 않는다. 교체가 필요한 곳은 Eureka(real/mock) 하나이고, `eureka.py`의 `get_eureka()`로 충분하다.
@@ -30,15 +30,24 @@ mocks/, docs/    이전 단계 참고용 (1차에서 안 씀)
 셋업 PR에서 함께 정리한 것: 빈 헥사고날 폴더 삭제, `.env.example`을 `EUREKA_API_KEY`(x-api-key) 기준으로 변경,
 `pyproject.toml` BOM 제거(설치 실패 원인), MCP·OpenAI·APScheduler 의존성 제거, `mocks/`·`docs/`를 참고용으로 표시.
 
-## 남은 결정 (2026-11-06, 구현 전)
+## 2026-11-06 결정의 진행 상황
 
 형식과 규칙은 `../contracts.md` § 1·6이 정본이다. 같은 날 결정한 업무 목록 캐시와 `GET /api/tasks`는 구현됐다 (아래 2026-11-11 현황).
 
-| 변경 | 내용 |
-| --- | --- |
-| 시간 제한 | 처리 전체 7초 → Pi 20초 안에 응답이 도착하도록 조정. 제안값은 쓰기 전까지 15초 + 쓰기 3초. **Pi 변경과 함께 배포한다** |
-| 쓰기 도중 시간 초과 (제안) | 처리됐는데 실패로 답하지 않게 "처리 여부를 확인하지 못했어요"로 답하고 `pending`을 지운다 |
-| 코드 삭제 | `reminder.py`, `ws.py`의 알림 전송, `alerts` 테이블, `POLL_INTERVAL_SECONDS` |
+| 변경 | 내용 | 상태 |
+| --- | --- | --- |
+| 시간 제한 | 처리 전체 7초 → 쓰기 전까지 15초 + Eureka 쓰기 3초. **Pi 20초 변경과 함께 배포한다** | Backend 구현 (PR #39), Pi 구현 전 |
+| 쓰기 도중 시간 초과 (제안) | 처리됐는데 실패로 답하지 않게 "처리 여부를 확인하지 못했어요"로 답하고 `pending`을 지운다 | 미구현. 지금은 일반 오류로 답하고 목록을 바로 다시 읽는다 |
+| 코드 삭제 | `reminder.py`, `ws.py`의 알림 전송, `alerts` 테이블, `POLL_INTERVAL_SECONDS` | 완료 (PR #41) |
+
+## 구현 현황 (2026-11-20)
+
+- 처리 제한을 쓰기 전까지 15초, Eureka 쓰기 3초로 나눴다 (PR #39). Pi의 20초 실패·10초 지연 안내는 하드웨어 쪽 구현 전이다.
+- `set_reminder`를 실행한다 (PR #40). 알림 간격을 SQLite에 저장하고 `reminder_set`으로 답하며, `GET /api/tasks`에 바로 반영된다.
+- 이전 선제 알림 코드를 삭제했다 (PR #41).
+- 삭제 확인 답("응", "아니")의 판정을 AI의 `confirm`으로 바꿨다 (PR #42). Backend는 답이 같은 업무에 대한 것인지만 본다.
+- **PR #43 (리뷰 중)**: `list_tasks`가 AI가 계산한 `date_from`·`date_to`로 업무를 거른다(Backend는 날짜를 계산하지 않음). 알림 켜기·끄기를 `reminder_enabled`와 `reminders.enabled` 열로 추가한다.
+  AI 프롬프트가 바뀌기 전까지는 목록이 항상 전체로 나오고 알림 끄기는 되묻는다.
 
 ## 구현 현황 (2026-11-11)
 

@@ -2,7 +2,8 @@
 
 > 레이어 간에 주고받는 형식의 **단일 진실원**. 바꾸려면 이 파일 PR을 먼저 올리고, merge 후 각 코드 레포에 반영한다.
 > 상태: **초안 (2026-10-08)**, 2026-10-29 멘토 미팅과 2026-11-06 팀 결정 반영. 구조와 흐름은 `architecture.md`를 본다.
-> 2026-11-06 결정 중 `GET /api/tasks`와 업무 목록 캐시는 Backend에 구현해 2026-11-11 서버에 배포했다. 시간 제한과 Pi 알람은 **아직 구현 전**이다. 각 절에 현재 동작을 함께 적는다.
+> 2026-11-06 결정 중 `GET /api/tasks`와 업무 목록 캐시는 Backend에 구현해 2026-11-11 서버에 배포했다. Backend 처리 제한(15초 + 쓰기 3초)도 구현했다 (Backend PR #39).
+> Pi 쪽 변경(지연 안내·20초 실패·마감 알람)은 **아직 구현 전**이다. 각 절에 현재 동작을 함께 적는다.
 >
 > 기반: [[wiki/desk-pet-pi-backend-protocol|Pi–Backend 통신 규약]]과 [[wiki/desk-pet-device-states|장치 상태]]
 > (2026-10-07 하드웨어 결정, MVP Mock Server 형식 유지). 이 문서는 그 형식을 그대로 쓰고, Backend 내부(AI 출력·Eureka 매핑·DB)와
@@ -66,17 +67,17 @@
 | `clarification` | 재질문. `output.tts`가 질문 문장 |
 | `error` | `status`가 `OK`가 아닐 때 |
 
-- **시간**. 2026-11-06에 아래 정책으로 바꾸기로 했다 (구현 전). 시간은 Pi의 업로드 시작부터 잰다.
+- **시간**. 2026-11-06 결정. Backend 쪽은 구현했고 Pi 쪽은 구현 전이다. 시간은 Pi의 업로드 시작부터 잰다.
 
-  | 항목 | 현재 동작 | 결정 (구현 전) |
+  | 항목 | 정책 | 상태 |
   | --- | --- | --- |
-  | 지연 안내 | 없음 | 10초가 지나도 응답이 없으면 Pi가 "조금 더 기다려주세요" 안내. LCD와 TTS 중 무엇을 쓸지는 하드웨어 팀이 PR 리뷰에서 정한다 |
-  | 요청 실패 | Pi 10초 초과 | Pi 20초 초과 |
-  | Backend 처리 제한 | 업로드·검증 뒤 읽기·Gemini·쓰기 전체 7초 | Pi 20초 안에 응답이 도착하도록 조정. 제안값: 쓰기 전까지 15초 + Eureka 쓰기 3초 (Pi 업로드 실측 후 확정) |
-  | LLM 재시도 | Gemini 503일 때 1회 | 1회. 대상 오류(시간 초과, 깨진 JSON 포함 여부)는 AI 담당과 정한다 |
+  | 지연 안내 | 10초가 지나도 응답이 없으면 Pi가 "조금 더 기다려주세요" 안내. LCD와 TTS 중 무엇을 쓸지는 하드웨어 팀이 PR 리뷰에서 정한다 | Pi 구현 전 |
+  | 요청 실패 | Pi 20초 초과 (이전 10초) | Pi 구현 전 |
+  | Backend 처리 제한 | 업로드 뒤 읽기·Gemini(재시도 포함)는 15초, Eureka 쓰기는 쓰기 시작부터 3초 (이전: 전체 7초) | 구현 (Backend PR #39) |
+  | LLM 재시도 | Gemini 503, 또는 응답이 깨진 JSON이거나 Decision과 맞지 않을 때 둘을 합쳐 1회. 재시도 시간도 15초 안에 포함 | 구현 (Backend PR #38) |
 
   처리 제한을 넘으면 `ERROR`를 반환한다. Backend 제한을 Pi 변경보다 먼저 늘리면 Pi가 끊은 뒤에도 Backend가 업무를 실행할 수 있으므로 **두 변경은 함께 배포한다.**
-- **현재 반환 범위**. `OK`와 `ERROR`를 반환한다. `NO_SPEECH`·`STT_ERROR`는 스키마에 정의되어 있고 반환 분기는 없다. `reminder_set`도 현재 처리에서 생성하지 않는다.
+- **현재 반환 범위**. `OK`와 `ERROR`를 반환한다. `NO_SPEECH`·`STT_ERROR`는 스키마에 정의되어 있고 반환 분기는 없다. `reminder_set`은 `set_reminder` 처리에서 반환한다 (Backend PR #40).
 - **재질문 연결**: Pi는 새 필드를 보내지 않는다. Backend가 `user_id`별로(생략하면 기본 사용자로) 원래 요청을 60초 동안
   기억했다가(`pending`) 다음 요청에 이어 붙인다. `conversationId`는 필요 없다.
 - **`output.lcd`**: LCD에 띄울 표정(`expression`)과 짧은 문구(`text`). `null`일 수 있다 — 그러면 Pi는 상태별 기본 표정을 쓴다 (§ 5).
@@ -94,7 +95,8 @@
 ## 2. Pi → Backend: 업무 목록 (마감 임박 알람)
 
 > **2026-11-06 결정 (Backend 구현됨, Pi 구현 전):** 마감 임박 알림은 WebSocket 푸시 대신 **Pi가 스스로 시간을 확인해 울린다.** Backend는 업무 목록만 준다.
-> 10-29의 "선제 알림 1차 제외"를 대체한다. 지금 코드에는 이전 설계의 `WS /ws/hardware/{user_id}`가 남아 있고 삭제 예정이다. Pi는 여기에 연결하지 않는다.
+> 10-29의 "선제 알림 1차 제외"를 대체한다. 이전 설계의 `WS /ws/hardware/{user_id}`에서 알림 전송은 지웠다 (Backend PR #41).
+> Hardware 앱이 아직 이 주소에 연결하므로 `connected`·`PING`/`PONG`만 남겼고, Pi가 연결을 끊으면 삭제한다.
 
 `GET /api/tasks` + 헤더 `X-Device-Token`. 응답은 아래와 같다 (Backend PR #36). 업무는 마감순이다.
 
@@ -105,7 +107,8 @@
       "item_id": "1000046",
       "name": "보고서 검토",
       "due_at": "2026-11-20T17:00:00+09:00",
-      "offset_minutes": 60
+      "offset_minutes": 60,
+      "reminder_enabled": true
     }
   ]
 }
@@ -113,8 +116,8 @@
 
 | 담당 | 하는 일 |
 | --- | --- |
-| Backend | 미완료 업무의 이름·마감 시각·알림 간격 전달. 간격을 따로 지정하지 않은 업무는 기본 60분 |
-| Pi | 목록 저장과 갱신, `마감 − offset_minutes ≤ 지금 < 마감`이면 알림 재생·LCD 표시, 보낸 기록 저장, 재부팅 후 복구 |
+| Backend | 미완료 업무의 이름·마감 시각·알림 간격·알림 켜짐 여부 전달. 간격을 따로 지정하지 않은 업무는 기본 60분. 알림을 끈 업무도 목록에서 빼지 않고 `reminder_enabled: false`로 보낸다 |
+| Pi | 목록 저장과 갱신, `마감 − offset_minutes ≤ 지금 < 마감`이면 알림 재생·LCD 표시, 보낸 기록 저장, 재부팅 후 복구. `reminder_enabled`가 `false`면 울리지 않는다 |
 
 - 마감은 시각까지 저장한다. Eureka `dueAt`은 epoch ms 값이다 (2026-11-06 원본 확인).
 - 알림 문장은 Pi가 만든다. 예: "보고서 검토 마감이 1시간 남았어요."
@@ -123,6 +126,7 @@
 - Backend는 목록을 캐시에서 내보낸다 (§ 4). Eureka 웹에서 바꾼 내용은 최대 하루 늦게 반영될 수 있다 (팀 전체 리뷰 항목).
 - 언제 울릴지는 Pi가 판단하므로 Backend는 마감이 지난 업무도 거르지 않는다. 알람 대상은 Pi가 위 조건으로 고른다.
 - 목록을 못 받으면 Backend는 503 `{"detail": "업무 목록을 가져오지 못했습니다"}`를 준다. 토큰 오류는 401이다. Pi는 저장해 둔 목록을 계속 쓴다.
+- `reminder_enabled`는 Backend PR #43(리뷰 중)에서 추가한다. 알림을 끈 업무도 `offset_minutes`는 그대로 내려간다(다시 켤 때 쓰는 값). 알람을 울릴지는 `reminder_enabled`로만 판단한다.
 
 ## 3. Backend 내부: AI 출력
 
@@ -149,26 +153,33 @@ LLM 출력:
 
 | `action` | `args` | 응답 `type` | 흡수한 기존 Intent |
 | --- | --- | --- | --- |
-| `create_task` | `name`, `due_at`, `offset_minutes`(선택) | `task_created` | CREATE_TASK |
-| `list_tasks` | `range`: `today` · `tomorrow` · `week` · `all` | `task_list` | GET_TASKS, GET_TASK_STATUS |
+| `create_task` | `name`, `due_at`, `offset_minutes`(선택), `reminder_enabled`(선택, `false`면 알림 없이 등록) | `task_created` | CREATE_TASK |
+| `list_tasks` | `date_from`, `date_to`: 마감 날짜 범위 (`"YYYY-MM-DD"`, KST, 양 끝 포함). 날짜 계산은 AI가 한다. 없는 쪽은 열림, 둘 다 없으면 전체 (이전 `range`: today·tomorrow·week·all) | `task_list` | GET_TASKS, GET_TASK_STATUS |
 | `complete_task` | `item_id` | `task_completed` | COMPLETE_TASK |
 | `update_due` | `item_id`, `due_at` | `task_updated` | UPDATE_TASK |
-| `delete_task` | `item_id` | 확인 질문 `clarification` → `task_deleted` | — (2026-11-06 추가, FR-24 변경) |
-| `set_reminder` | `item_id`, `offset_minutes` | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
+| `delete_task` | `item_id`, `confirm`(확인 질문에 답할 때만 `"yes"` · `"no"` · `null`) | 확인 질문 `clarification` → `task_deleted` 또는 `task_delete_cancelled` | — (2026-11-06 추가, FR-24 변경) |
+| `set_reminder` | `item_id` + `offset_minutes`(간격 변경, 알림도 켬) 또는 `reminder_enabled`(`false` 끄기 / `true` 저장된 간격으로 다시 켜기) | `reminder_set` | SET_REMINDER, UPDATE_REMINDER |
 | `clarify` | `candidates`(선택, item_id 배열) + `question` 필수 | `clarification` | UNKNOWN, need_clarification |
 
-현재 실행하는 action은 `create_task`·`list_tasks`·`complete_task`·`update_due`·`delete_task`·`clarify`다. `set_reminder`는 스키마와 프롬프트에 있으며 실행 시 미지원 오류를 반환한다. `delete_task`는 desk-pet-backend `feat/ai-delete-and-json-retry` 브랜치에서 프롬프트에 반영했으며, 병합 전까지는 AI가 내보내지 않는다.
+위 action은 모두 Backend에서 실행한다. `set_reminder`는 Backend PR #40, `delete_task`는 PR #34·#38에서 연결했다.
 
-**삭제 확인**: `delete_task`는 바로 실행하지 않는다. Backend가 업무 이름과 마감을 말하며 되묻고 `pending`에 대상 `item_id`를 60초 보관한다. 다음 발화가 "응"·"네" 같은 긍정 답이면 삭제하고, "아니" 같은 부정 답이면 취소한다. 다른 말이면 대기를 지우고 새 요청으로 처리한다. 답 판정은 LLM이 아니라 Backend가 받아쓴 문장으로 한다.
+**Backend PR #43 (리뷰 중)**: `list_tasks`의 `range`를 `date_from`·`date_to`로 바꾸고, `create_task`·`set_reminder`에 `reminder_enabled`를 더한다.
+AI 프롬프트는 아직 바꾸지 않았다(AI 담당). 프롬프트 반영 전까지 AI는 `range`를 내고 `reminder_enabled`는 내지 않으므로, 목록은 항상 전체를 읽고 알림 끄기는 "알림 시간을 알려 주세요."로 되묻는다.
+
+**삭제 확인**: `delete_task`는 바로 실행하지 않는다. Backend가 업무 이름과 마감을 말하며 되묻고 `pending`에 대상 `item_id`를 60초 보관한다.
+다음 발화의 동의 여부는 AI가 `confirm`으로 판단한다 (Backend PR #42). Backend는 그 답이 같은 업무(`item_id`)에 대한 `delete_task`인지만 확인한다.
+`"yes"`면 삭제(`task_deleted`), `"no"`면 취소(`task_delete_cancelled`), `null`(알 수 없음)이면 같은 업무로 다시 묻는다. 다른 요청이면 대기를 지우고 새 요청으로 처리한다.
 
 Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 
-1. `offset_minutes`가 없으면 60.
+1. `offset_minutes`가 없으면 60. 알림을 꺼도(`reminder_enabled: false`) 간격은 지우지 않고 다시 켤 때 쓴다.
 2. `item_id`가 백엔드가 조회한 미완료 목록에 없으면 실행하지 않고 `clarification`.
 3. `due_at`이 과거면 `clarification`.
 4. 스키마 검증에 실패하면 `status: ERROR` ("다시 한 번 말씀해 주세요").
 5. Eureka가 2xx를 반환하고 응답 본문까지 확인한 뒤에만 성공 `type`을 돌려준다.
 6. `output.tts`는 항상 Backend 템플릿이 만든다 (LLM을 두 번 부르지 않는다). 재질문만 LLM의 `question`을 쓴다.
+7. `list_tasks`는 마감 날짜(KST)가 `date_from`~`date_to`인 업무만 읽고, 마감이 지난 업무는 빼고, 마감순으로 최대 5개를 읽는다. 앞뒤가 바뀌어 오면 순서만 바로잡고, 읽을 때 기간도 말한다 (PR #43).
+8. `offset_minutes`는 1 이상이어야 한다. 0 이하면 `clarification`. 알림 켜기·끄기는 `reminder_enabled`로만 한다 (PR #43).
 
 **현재 구현 — Gemini API**. `services/ai.py`가 모델 설정을 읽고 오디오 또는 텍스트와 맥락으로 구조화 JSON을 한 번 받는다.
 
@@ -235,7 +246,8 @@ Backend `services/tasks.py`가 강제하는 정책 (LLM에 맡기지 않는다):
 ```sql
 CREATE TABLE reminders (
   item_id TEXT PRIMARY KEY,
-  offset_min INTEGER NOT NULL DEFAULT 60
+  offset_min INTEGER NOT NULL DEFAULT 60,
+  enabled INTEGER NOT NULL DEFAULT 1   -- 0이면 알림 끔
 );
 
 CREATE TABLE pending (
@@ -245,8 +257,9 @@ CREATE TABLE pending (
 );
 ```
 
-- `pending`과 `reminders`를 사용한다. `reminders`의 알림 간격은 `GET /api/tasks`로 Pi에 전달한다.
-- `alerts` 테이블은 쓰지 않기로 했다 (2026-11-06). 코드에는 정의가 남아 있고 구현 때 삭제한다. 알림 기록은 Pi가 저장한다 (§ 2).
+- `pending`과 `reminders`를 사용한다. `reminders`의 알림 간격과 켜짐 여부는 `GET /api/tasks`로 Pi에 전달한다.
+- `enabled` 열은 Backend PR #43(리뷰 중)에서 추가한다. 이 열이 없던 DB 파일은 Backend가 열 때 열을 자동으로 더하고, 기존 업무는 켜진 상태(1)가 된다.
+- `alerts` 테이블은 쓰지 않기로 했고 (2026-11-06), 코드에서도 삭제했다 (Backend PR #41). 알림 기록은 Pi가 저장한다 (§ 2).
 - 업무명·마감·상태는 SQLite에 저장하지 않는다. 원본은 Eureka이고, 메모리 캐시에는 읽기용 사본을 둔다 (§ 4).
 
 ## 변경 이력
@@ -269,3 +282,6 @@ CREATE TABLE pending (
 - 2026-11-06: 팀 결정 반영 (구현 전). Pi 지연 안내 10초·실패 20초, Backend 처리 제한 조정, LLM 재시도 1회(§ 1). WebSocket 알림 대신 `GET /api/tasks` + Pi 자체 알람(§ 2, § 5, 하드웨어 팀 동의). 목록 캐시(§ 4). `alerts` 테이블 제외(§ 6). 남은 리뷰: 지연 안내 방식(하드웨어 팀), Eureka 웹 변경의 반영 지연(전체).
 - 2026-11-06: 음성 삭제 추가 — `delete_task`, `task_deleted`, `task_delete_cancelled`, 확인 질문 필수(§ 1, § 3, § 4). 기획서 FR-24 "삭제 제외"를 바꾸는 결정이다.
 - 2026-11-11: `GET /api/tasks`(§ 2)와 목록 캐시(§ 4)를 Backend에 구현해 서버에 배포했다. 목록 조회 실패 시 503(§ 2)을 적었다. 형식 변경은 없다.
+- 2026-11-20: Backend 코드와 대조해 갱신. 처리 제한 15초 + 쓰기 3초(PR #39)와 LLM 재시도 대상(PR #38) 구현(§ 1), `set_reminder` 실행(PR #40, § 1·§ 3),
+  이전 알림 전송·`alerts` 테이블 삭제(PR #41, § 2·§ 6), 삭제 확인 답을 AI `confirm`으로 판정(PR #42, § 3) 반영.
+  Backend PR #43(리뷰 중) 형식 변경: `list_tasks`의 `range` → `date_from`·`date_to`(§ 3), `reminder_enabled`(§ 2·§ 3), `reminders.enabled`(§ 6).
