@@ -38,12 +38,13 @@ FastAPI: 입력 검증 → tasks.py: 맥락 조회 → Decision 검증·실행 �
 | Pi | 버튼, 녹음, 업로드, TTS 합성·재생, LED/LCD 표시, 지연 안내, 마감 알람(목록 저장, 시간 확인, 보낸 기록, 재부팅 복구) | 업무 판단, Eureka 호출, LLM API 키 보관 |
 | Backend `api/` | 엔드포인트, 디바이스 토큰 확인 | 비즈니스 규칙 |
 | Backend `services/ai.py` | LLM 1회 호출, 출력 JSON 스키마 검증 | 업무 실행 |
-| Backend `services/tasks.py` | action 실행, 기본 알림 60분, item_id 검증, Eureka 성공 확인 후 응답 | HTTP 세부 |
+| Backend `services/tasks.py` | action 실행, 기본 알림 60분, 알림 켜기·끄기, item_id 검증, AI가 준 날짜 범위로 목록 거르기, Eureka 성공 확인 후 응답 | HTTP 세부, 날짜 계산 |
 | Backend `services/task_cache.py` | Eureka 미완료 목록 캐시, 쓰기 뒤 캐시 수정·재조회 | 업무 판단 |
 | Backend `eureka.py` | 요청·응답 필드 매핑, epoch ms 변환, 목록 100건 제한과 오류 본문 확인 | 정책 |
-| Backend `db.py` | 알림 간격·재질문 대기 저장 | 업무 원본 (Eureka가 원본) |
+| Backend `db.py` | 알림 간격·알림 켜짐 여부·재질문 대기 저장 | 업무 원본 (Eureka가 원본) |
 
-`services/reminder.py`, `api/ws.py`의 알림 전송, `alerts` 테이블은 이전 설계의 코드다. 2026-11-06 결정으로 쓰지 않으며 구현 때 삭제한다.
+이전 설계의 코드(`services/reminder.py`, `api/ws.py`의 알림 전송, `alerts` 테이블)는 삭제했다 (Backend PR #41). `api/ws.py`에는 Hardware 앱 연결용 `PING`/`PONG`만 남아 있다.
+알림 켜기·끄기와 날짜 범위 조회는 Backend PR #43(리뷰 중)에서 추가한다.
 
 코드 레포 구조는 각 레포 README가 정본이다: `desk-pet-backend`(`api/` → `services/` → `eureka.py`·`db.py`),
 `Hardware`(`setup/` → `parts/` → `app/`).
@@ -61,7 +62,7 @@ LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.
    LLM 호출은 실패 시 1회 재시도한다.
 4. `tasks.py`가 검증·실행하고 결과를 템플릿 문장으로 만든다. 응답 문장을 위해 LLM을 두 번 부르지 않는다.
 5. 응답 `{status, type, output}`을 받은 Pi가 `output.tts`를 Edge-TTS로 합성·재생하고 IDLE로 돌아간다.
-6. 응답이 늦으면 Pi가 10초에 지연 안내를 내고 20초에 실패 처리한다 (`contracts.md` § 1, 구현 전).
+6. 응답이 늦으면 Pi가 10초에 지연 안내를 내고 20초에 실패 처리한다 (`contracts.md` § 1). Backend 처리 제한(15초 + 쓰기 3초)은 구현했고, Pi 쪽은 구현 전이다.
    이전 정책은 Pi 10초·Backend 7초였는데, Gemini 처리 시간이 1~30초로 불규칙해 정상 호출도 `TimeoutError`로 끝나서 바꿨다.
 
 ### 마감 임박 알림 (2026-11-06 결정. Backend 목록 API는 2026-11-11 배포, Pi 구현 전)
@@ -69,7 +70,7 @@ LED 색과 LCD 표정은 Pi의 매핑표 한 곳에서만 정한다 (`contracts.
 폴링과 WebSocket 대신 Pi가 스스로 울린다. 마감 시각을 알고 있으면 알림 시각에 서버 연결이 필요 없기 때문이다. 하드웨어 팀이 동의했다.
 
 1. Pi가 부팅 때와 쓰기 응답을 받은 뒤 `GET /api/tasks`로 목록을 받아 저장한다.
-2. `마감 − offset_minutes ≤ 지금 < 마감`이고 보낸 기록이 없으면 대상이다.
+2. `마감 − offset_minutes ≤ 지금 < 마감`이고 보낸 기록이 없으면 대상이다. `reminder_enabled`가 `false`인 업무(사용자가 알림을 끔)는 대상이 아니다 (Backend PR #43).
 3. Pi가 문장을 만들어 재생하고 LCD에 표시한 뒤 기록을 저장한다 ("보고서 검토 마감이 1시간 남았어요.").
 4. 재부팅하면 저장한 목록과 기록으로 복구한다.
 
